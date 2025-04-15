@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +17,9 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/context/AuthContext";
+import { useTasks } from "@/hooks/useTasks";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Task schema
 const taskSchema = z.object({
@@ -35,39 +37,8 @@ type Task = z.infer<typeof taskSchema> & {
 };
 
 const DailyPlanner = () => {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Complete Project Proposal",
-      description: "Finish the draft for the new client project",
-      dueDate: new Date(),
-      priority: "high",
-      completed: false,
-      estimatedTime: "2h",
-      createdAt: new Date(),
-    },
-    {
-      id: "2",
-      title: "Morning Yoga Session",
-      description: "20 minutes of yoga practice",
-      dueDate: new Date(),
-      priority: "medium",
-      completed: true,
-      estimatedTime: "20m",
-      createdAt: new Date(),
-    },
-    {
-      id: "3",
-      title: "Grocery Shopping",
-      description: "Buy vegetables, fruits, and other essentials",
-      dueDate: new Date(),
-      priority: "low",
-      completed: false,
-      estimatedTime: "1h",
-      createdAt: new Date(),
-    },
-  ]);
-
+  const { user } = useAuth();
+  const { tasks, isLoading, createTask, updateTask, deleteTask } = useTasks();
   const [isRecording, setIsRecording] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
@@ -83,37 +54,30 @@ const DailyPlanner = () => {
   });
 
   const handleSubmit = (values: z.infer<typeof taskSchema>) => {
-    const newTask: Task = {
-      id: Math.random().toString(36).substring(2, 9),
-      ...values,
-      completed: false,
-      createdAt: new Date(),
-    };
-
-    setTasks((prevTasks) => [newTask, ...prevTasks]);
-    setIsAddingTask(false);
-    form.reset();
-
-    toast({
-      title: "Task Added",
-      description: "Your task has been added successfully.",
+    createTask.mutate({
+      title: values.title,
+      description: values.description,
+      due_date: values.dueDate.toISOString(),
+      priority: values.priority,
+      status: 'pending',
+      estimatedTime: values.estimatedTime,
+    }, {
+      onSuccess: () => {
+        setIsAddingTask(false);
+        form.reset();
+      }
     });
   };
 
-  const handleToggleTask = (id: string) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const handleToggleTask = (id: string, completed: boolean) => {
+    updateTask.mutate({
+      id,
+      status: completed ? 'completed' : 'pending'
+    });
   };
 
   const handleDeleteTask = (id: string) => {
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
-    toast({
-      title: "Task Deleted",
-      description: "Your task has been deleted.",
-    });
+    deleteTask.mutate(id);
   };
 
   const handleVoiceInput = () => {
@@ -134,8 +98,8 @@ const DailyPlanner = () => {
   };
 
   const filteredTasks = tasks.filter((task) => {
-    if (filter === "pending") return !task.completed;
-    if (filter === "completed") return task.completed;
+    if (filter === "pending") return task.status !== 'completed';
+    if (filter === "completed") return task.status === 'completed';
     return true;
   });
 
@@ -151,6 +115,15 @@ const DailyPlanner = () => {
         return "text-gray-500 bg-gray-500/10 border-gray-500/20";
     }
   };
+
+  if (!user) {
+    return (
+      <div className="container max-w-5xl mx-auto p-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">Please log in to use the Daily Planner</h2>
+        <p className="text-muted-foreground">You need to be logged in to view and manage your tasks.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-5xl mx-auto space-y-8">
@@ -326,7 +299,31 @@ const DailyPlanner = () => {
             </Card>
           )}
 
-          {filteredTasks.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i} className="border border-border/40">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Skeleton className="rounded-full h-5 w-5 shrink-0 mt-1" />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-48 mt-1" />
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <Skeleton className="h-5 w-16 rounded-md" />
+                          <Skeleton className="h-5 w-16 rounded-md" />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredTasks.length === 0 ? (
             <div className="bg-secondary/40 rounded-lg border border-border/40 p-6 text-center">
               <p className="text-muted-foreground">No tasks found</p>
             </div>
@@ -337,7 +334,7 @@ const DailyPlanner = () => {
                   key={task.id}
                   className={cn(
                     "border border-border/40",
-                    task.completed && "bg-secondary/30 opacity-75"
+                    task.status === 'completed' && "bg-secondary/30 opacity-75"
                   )}
                 >
                   <CardContent className="p-4">
@@ -347,11 +344,11 @@ const DailyPlanner = () => {
                         size="icon"
                         className={cn(
                           "rounded-full h-5 w-5 p-0 shrink-0 mt-1",
-                          task.completed && "bg-lifemate-purple text-white border-lifemate-purple"
+                          task.status === 'completed' && "bg-lifemate-purple text-white border-lifemate-purple"
                         )}
-                        onClick={() => handleToggleTask(task.id)}
+                        onClick={() => handleToggleTask(task.id, task.status === 'completed')}
                       >
-                        {task.completed && <Check className="h-3 w-3" />}
+                        {task.status === 'completed' && <Check className="h-3 w-3" />}
                       </Button>
 
                       <div className="flex-1 min-w-0">
@@ -359,7 +356,7 @@ const DailyPlanner = () => {
                           <h3
                             className={cn(
                               "font-medium line-clamp-1",
-                              task.completed && "line-through text-muted-foreground"
+                              task.status === 'completed' && "line-through text-muted-foreground"
                             )}
                           >
                             {task.title}
@@ -378,7 +375,7 @@ const DailyPlanner = () => {
                           <p
                             className={cn(
                               "text-sm text-muted-foreground mt-1",
-                              task.completed && "line-through"
+                              task.status === 'completed' && "line-through"
                             )}
                           >
                             {task.description}
@@ -395,7 +392,7 @@ const DailyPlanner = () => {
 
                           <Badge variant="outline" className="bg-secondary/50">
                             <CalendarIcon className="h-3 w-3 mr-1" />
-                            {format(task.dueDate, "MMM d")}
+                            {format(new Date(task.due_date), "MMM d")}
                           </Badge>
 
                           {task.estimatedTime && (
@@ -431,7 +428,7 @@ const DailyPlanner = () => {
                         width: `${
                           tasks.length > 0
                             ? Math.round(
-                                (tasks.filter((t) => t.completed).length / tasks.length) * 100
+                                (tasks.filter((t) => t.status === 'completed').length / tasks.length) * 100
                               )
                             : 0
                         }%`,
@@ -439,7 +436,7 @@ const DailyPlanner = () => {
                     />
                   </div>
                   <span className="text-sm">
-                    {tasks.filter((t) => t.completed).length}/{tasks.length}
+                    {tasks.filter((t) => t.status === 'completed').length}/{tasks.length}
                   </span>
                 </div>
               </div>

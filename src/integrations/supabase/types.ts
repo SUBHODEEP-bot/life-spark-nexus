@@ -9,7 +9,242 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      family_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      family_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_records: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string | null
+          description: string | null
+          id: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      health_records: {
+        Row: {
+          created_at: string
+          date: string | null
+          description: string | null
+          id: string
+          record_type: string | null
+          reminder_enabled: boolean | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          record_type?: string | null
+          reminder_enabled?: boolean | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          record_type?: string | null
+          reminder_enabled?: boolean | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          mood: string | null
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          mood?: string | null
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          mood?: string | null
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      yoga_sessions: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string
+          duration: number | null
+          id: string
+          routine_name: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          routine_name: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          routine_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
