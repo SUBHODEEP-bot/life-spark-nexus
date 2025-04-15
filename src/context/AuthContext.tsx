@@ -12,9 +12,12 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   verifyOTP: (otp: string) => Promise<boolean>;
+  resendOTP: () => Promise<boolean>;
   logout: () => void;
 }
 
@@ -23,17 +26,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for existing session in localStorage
     const storedUser = localStorage.getItem('lifemate_user');
+    const storedTheme = localStorage.getItem('lifemate_theme');
+    
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      setTheme(storedTheme);
+      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+    }
+    
     setIsLoading(false);
   }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('lifemate_theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -88,6 +107,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Store pending registration data for OTP verification
       setPendingEmail(email);
       setPendingName(name);
+
+      // Generate and "send" OTP (in a real app this would be sent via email)
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+      localStorage.setItem('lifemate_pending_otp', otp);
+      
+      // In a real app, this would be sent via API to user's email
+      console.log(`[Development] OTP code: ${otp}`);
       
       toast({
         title: "Verification Required",
@@ -107,16 +133,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resendOTP = async () => {
+    try {
+      if (!pendingEmail) {
+        toast({
+          title: "Error",
+          description: "No pending registration found. Please register again.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      setIsLoading(true);
+      
+      // Generate and "send" new OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+      localStorage.setItem('lifemate_pending_otp', otp);
+      
+      // In a real app, this would be sent via API to user's email
+      console.log(`[Development] OTP code resent: ${otp}`);
+      
+      toast({
+        title: "Code Resent",
+        description: `We've resent a verification code to ${pendingEmail}. Please check your email.`,
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        title: "Failed to resend code",
+        description: "Could not resend verification code. Please try again.",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const verifyOTP = async (otp: string) => {
     try {
       setIsLoading(true);
       
-      // Mock API call - would be replaced with real backend OTP verification
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      // Get stored OTP - in a real app this would be verified against a server
+      const storedOTP = localStorage.getItem('lifemate_pending_otp');
       
       // Mock successful verification
       // In a real app, we would verify the OTP with the server
-      if (otp === '123456' || otp.length === 6) { // Mock validation - 123456 or any 6-digit code works
+      if (otp === storedOTP || otp === '123456') { // Keep fallback for testing
         const mockUser = {
           id: '1',
           name: pendingName || 'User',
@@ -126,9 +190,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(mockUser);
         localStorage.setItem('lifemate_user', JSON.stringify(mockUser));
         
-        // Clear pending registration data
+        // Clear pending registration data and OTP
         setPendingEmail(null);
         setPendingName(null);
+        localStorage.removeItem('lifemate_pending_otp');
         
         toast({
           title: "Verification Successful!",
@@ -170,9 +235,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user, 
       isAuthenticated: !!user, 
       isLoading, 
+      theme,
+      toggleTheme,
       login, 
       register, 
       verifyOTP, 
+      resendOTP,
       logout 
     }}>
       {children}

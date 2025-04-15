@@ -1,8 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Shield, EyeIcon, EyeOffIcon } from "lucide-react";
+import { Shield, EyeIcon, EyeOffIcon, Moon, Sun } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,7 +37,7 @@ const registerSchema = z.object({
 
 // OTP Verification Schema
 const otpSchema = z.object({
-  otp: z.string().min(6, "OTP must be at least 6 characters"),
+  otp: z.string().min(6, "OTP must be at least 6 characters").max(6, "OTP must be 6 characters"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -47,13 +47,24 @@ type OtpFormValues = z.infer<typeof otpSchema>;
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, verifyOTP } = useAuth();
+  const { login, register, verifyOTP, resendOTP, theme, toggleTheme } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [showOTP, setShowOTP] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
   
   const from = (location.state as { from?: string })?.from || "/dashboard";
+
+  // OTP resend timer
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const interval = setInterval(() => {
+        setOtpTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [otpTimer]);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -91,6 +102,8 @@ const AuthPage = () => {
     const success = await register(values.name, values.email, values.password);
     if (success) {
       setShowOTP(true);
+      // Set a 60 seconds timer for OTP resend
+      setOtpTimer(60);
     }
   };
 
@@ -101,8 +114,33 @@ const AuthPage = () => {
     }
   };
 
+  const handleResendOTP = async () => {
+    if (otpTimer > 0) return;
+    
+    const success = await resendOTP();
+    if (success) {
+      // Reset timer after successful resend
+      setOtpTimer(60);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-lifemate-dark' : 'bg-lifemate-light'}`}>
+      <div className="absolute top-4 right-4">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={toggleTheme}
+          className="rounded-full"
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+      
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
@@ -117,12 +155,12 @@ const AuthPage = () => {
                 LifeMate X
               </span>
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-muted-foreground' : 'text-gray-600'}`}>
               Your all-in-one personal life assistant
             </p>
           </div>
 
-          <div className="bg-secondary/60 backdrop-blur-sm p-6 rounded-xl border border-border/40 shadow-xl">
+          <div className={`${theme === 'dark' ? 'bg-secondary/60' : 'bg-white/80'} backdrop-blur-sm p-6 rounded-xl border border-border/40 shadow-xl`}>
             {!showOTP ? (
               <Tabs defaultValue="login" onValueChange={(value) => setIsRegistering(value === "register")}>
                 <TabsList className="grid grid-cols-2 mb-6">
@@ -307,7 +345,7 @@ const AuthPage = () => {
               <div className="space-y-4">
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-semibold">Verify Your Email</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className={`text-sm ${theme === 'dark' ? 'text-muted-foreground' : 'text-gray-600'}`}>
                     We've sent a verification code to your email.
                     Please enter it below to complete your registration.
                   </p>
@@ -326,9 +364,15 @@ const AuthPage = () => {
                               placeholder="Enter 6-digit code"
                               {...field}
                               className="text-center tracking-widest"
+                              maxLength={6}
                             />
                           </FormControl>
                           <FormMessage />
+                          
+                          {/* OTP debugging info for development */}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            For development: Use any 6-digit code or check console for the generated code
+                          </p>
                         </FormItem>
                       )}
                     />
@@ -343,13 +387,22 @@ const AuthPage = () => {
                       </Button>
                     </div>
 
-                    <div className="text-center">
+                    <div className="flex justify-between text-center text-sm pt-2">
                       <Button 
                         variant="link" 
                         onClick={() => setShowOTP(false)}
                         className="text-sm"
                       >
                         Back to {isRegistering ? "registration" : "login"}
+                      </Button>
+
+                      <Button 
+                        variant="link" 
+                        onClick={handleResendOTP}
+                        disabled={otpTimer > 0}
+                        className="text-sm"
+                      >
+                        {otpTimer > 0 ? `Resend in ${otpTimer}s` : "Resend code"}
                       </Button>
                     </div>
                   </form>
@@ -359,7 +412,7 @@ const AuthPage = () => {
           </div>
 
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">
+            <p className={`text-xs ${theme === 'dark' ? 'text-muted-foreground' : 'text-gray-500'}`}>
               By continuing, you agree to LifeMate X's Terms of Service and Privacy Policy
             </p>
           </div>
