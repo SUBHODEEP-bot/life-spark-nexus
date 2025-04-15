@@ -1,14 +1,16 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Shield, EyeIcon, EyeOffIcon, Moon, Sun } from "lucide-react";
+import { Shield, EyeIcon, EyeOffIcon, Moon, Sun, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/use-toast";
 import {
   Form,
   FormControl,
@@ -37,7 +39,7 @@ const registerSchema = z.object({
 
 // OTP Verification Schema
 const otpSchema = z.object({
-  otp: z.string().min(6, "OTP must be at least 6 characters").max(6, "OTP must be 6 characters"),
+  otp: z.string().length(6, "Verification code must be 6 digits"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -53,6 +55,8 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+  const otpInputRef = useRef<HTMLInputElement>(null);
   
   const from = (location.state as { from?: string })?.from || "/dashboard";
 
@@ -65,6 +69,15 @@ const AuthPage = () => {
       return () => clearInterval(interval);
     }
   }, [otpTimer]);
+
+  // Focus OTP input when showing the verification form
+  useEffect(() => {
+    if (showOTP && otpInputRef.current) {
+      setTimeout(() => {
+        otpInputRef.current?.focus();
+      }, 100);
+    }
+  }, [showOTP]);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -94,6 +107,10 @@ const AuthPage = () => {
   const onLoginSubmit = async (values: LoginFormValues) => {
     const success = await login(values.email, values.password);
     if (success) {
+      toast({
+        title: "Login successful",
+        description: "Welcome back to LifeMate X!",
+      });
       navigate(from);
     }
   };
@@ -104,34 +121,49 @@ const AuthPage = () => {
       setShowOTP(true);
       // Set a 60 seconds timer for OTP resend
       setOtpTimer(60);
+      // Show debug info in console
+      console.log("[Development] Check console for OTP code");
     }
   };
 
   const onOTPSubmit = async (values: OtpFormValues) => {
     const success = await verifyOTP(values.otp);
     if (success) {
+      toast({
+        title: "Verification successful",
+        description: "Your account has been verified successfully!",
+      });
       navigate(from);
     }
   };
 
   const handleResendOTP = async () => {
-    if (otpTimer > 0) return;
+    if (otpTimer > 0 || isResending) return;
     
-    const success = await resendOTP();
-    if (success) {
-      // Reset timer after successful resend
-      setOtpTimer(60);
+    setIsResending(true);
+    try {
+      const success = await resendOTP();
+      if (success) {
+        // Reset timer after successful resend
+        setOtpTimer(60);
+        toast({
+          title: "Verification code resent",
+          description: "Please check your email for the new code",
+        });
+      }
+    } finally {
+      setIsResending(false);
     }
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-lifemate-dark' : 'bg-lifemate-light'}`}>
-      <div className="absolute top-4 right-4">
+    <div className={`auth-container ${theme}`}>
+      <div className="absolute top-4 right-4 flex gap-2">
         <Button 
-          variant="ghost" 
+          variant="outline" 
           size="icon" 
           onClick={toggleTheme}
-          className="rounded-full"
+          className="rounded-full bg-secondary/40 backdrop-blur-sm border-border/30"
         >
           {theme === 'dark' ? (
             <Sun className="h-5 w-5" />
@@ -145,22 +177,22 @@ const AuthPage = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <div className="flex justify-center">
-              <div className="h-12 w-12 rounded-xl bg-lifemate-purple flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
+              <div className="h-16 w-16 rounded-2xl bg-lifemate-purple flex items-center justify-center shadow-lg">
+                <Shield className="h-8 w-8 text-white" />
               </div>
             </div>
-            <h1 className="mt-6 text-3xl font-bold">
+            <h1 className="mt-6 text-4xl font-bold">
               Welcome to{" "}
               <span className="bg-gradient-to-r from-lifemate-purple to-lifemate-purple-dark text-transparent bg-clip-text">
                 LifeMate X
               </span>
             </h1>
-            <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-muted-foreground' : 'text-gray-600'}`}>
+            <p className="mt-2 text-muted-foreground">
               Your all-in-one personal life assistant
             </p>
           </div>
 
-          <div className={`${theme === 'dark' ? 'bg-secondary/60' : 'bg-white/80'} backdrop-blur-sm p-6 rounded-xl border border-border/40 shadow-xl`}>
+          <div className={`auth-card ${theme}`}>
             {!showOTP ? (
               <Tabs defaultValue="login" onValueChange={(value) => setIsRegistering(value === "register")}>
                 <TabsList className="grid grid-cols-2 mb-6">
@@ -342,54 +374,59 @@ const AuthPage = () => {
                 </TabsContent>
               </Tabs>
             ) : (
-              <div className="space-y-4">
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold">Verify Your Email</h3>
-                  <p className={`text-sm ${theme === 'dark' ? 'text-muted-foreground' : 'text-gray-600'}`}>
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-semibold">Verify Your Email</h3>
+                  <p className="text-muted-foreground mt-2">
                     We've sent a verification code to your email.
                     Please enter it below to complete your registration.
                   </p>
                 </div>
 
                 <Form {...otpForm}>
-                  <form onSubmit={otpForm.handleSubmit(onOTPSubmit)} className="space-y-4">
+                  <form onSubmit={otpForm.handleSubmit(onOTPSubmit)} className="space-y-6">
                     <FormField
                       control={otpForm.control}
                       name="otp"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Verification Code</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter 6-digit code"
-                              {...field}
-                              className="text-center tracking-widest"
-                              maxLength={6}
-                            />
-                          </FormControl>
-                          <FormMessage />
+                        <FormItem className="space-y-4">
+                          <div className="flex justify-center">
+                            <InputOTP maxLength={6} {...field}>
+                              <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={4} />
+                                <InputOTPSlot index={5} />
+                              </InputOTPGroup>
+                            </InputOTP>
+                          </div>
+                          <FormMessage className="text-center" />
                           
-                          {/* OTP debugging info for development */}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            For development: Use any 6-digit code or check console for the generated code
-                          </p>
+                          {/* Debug info */}
+                          <div className="bg-secondary/50 rounded-md p-3 mt-4 border border-border/30">
+                            <p className="text-xs text-muted-foreground">
+                              <strong>Development Note:</strong> For testing, check the generated OTP code in the browser console logs.
+                            </p>
+                          </div>
                         </FormItem>
                       )}
                     />
 
-                    <div className="pt-2">
+                    <div>
                       <Button 
                         type="submit" 
                         className="w-full bg-lifemate-purple hover:bg-lifemate-purple-dark"
                         disabled={otpForm.formState.isSubmitting}
                       >
-                        {otpForm.formState.isSubmitting ? "Verifying..." : "Verify"}
+                        {otpForm.formState.isSubmitting ? "Verifying..." : "Verify Code"}
                       </Button>
                     </div>
 
-                    <div className="flex justify-between text-center text-sm pt-2">
+                    <div className="flex justify-between items-center pt-2">
                       <Button 
-                        variant="link" 
+                        variant="ghost" 
                         onClick={() => setShowOTP(false)}
                         className="text-sm"
                       >
@@ -397,12 +434,25 @@ const AuthPage = () => {
                       </Button>
 
                       <Button 
-                        variant="link" 
+                        variant="outline"
+                        size="sm"
                         onClick={handleResendOTP}
-                        disabled={otpTimer > 0}
-                        className="text-sm"
+                        disabled={otpTimer > 0 || isResending}
+                        className="text-sm flex items-center gap-1"
                       >
-                        {otpTimer > 0 ? `Resend in ${otpTimer}s` : "Resend code"}
+                        {isResending ? (
+                          <>
+                            <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                            Sending...
+                          </>
+                        ) : otpTimer > 0 ? (
+                          `Resend in ${otpTimer}s`
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Resend code
+                          </>
+                        )}
                       </Button>
                     </div>
                   </form>
@@ -412,7 +462,7 @@ const AuthPage = () => {
           </div>
 
           <div className="text-center">
-            <p className={`text-xs ${theme === 'dark' ? 'text-muted-foreground' : 'text-gray-500'}`}>
+            <p className="text-xs text-muted-foreground">
               By continuing, you agree to LifeMate X's Terms of Service and Privacy Policy
             </p>
           </div>

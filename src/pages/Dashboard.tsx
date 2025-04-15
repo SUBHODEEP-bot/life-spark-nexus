@@ -6,7 +6,7 @@ import {
   ActivitySquare, BarChart3, Bell, Calendar, CheckSquare, 
   Heart, HelpCircle, Home, MessageCircle, 
   Newspaper, Shield, Star, User, UserCog, Mic, AlertTriangle,
-  LucideIcon, Award, Wallet, Languages, Mail
+  LucideIcon, Award, Wallet, Languages, Mail, Clock
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -197,7 +197,7 @@ const modulesList: Module[] = [
 ];
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, theme } = useAuth();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState("");
   const [currentTime, setCurrentTime] = useState("");
@@ -225,7 +225,7 @@ const Dashboard = () => {
   
   return (
     <div className="container max-w-6xl mx-auto space-y-8">
-      <section className="bg-secondary/40 backdrop-blur-sm rounded-xl p-6 border border-border/40">
+      <section className="glass-card p-6">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">

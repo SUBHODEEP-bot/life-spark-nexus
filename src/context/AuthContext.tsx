@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -30,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState<string | null>(null);
 
+  // Initialize theme and apply it to document
   useEffect(() => {
     // Check for existing session in localStorage
     const storedUser = localStorage.getItem('lifemate_user');
@@ -41,17 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (storedTheme === 'light' || storedTheme === 'dark') {
       setTheme(storedTheme);
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+    } else {
+      // Set default theme based on user preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+      localStorage.setItem('lifemate_theme', prefersDark ? 'dark' : 'light');
     }
     
     setIsLoading(false);
   }, []);
 
+  // Apply theme changes to document
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('lifemate_theme', theme);
+  }, [theme]);
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    localStorage.setItem('lifemate_theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
   const login = async (email: string, password: string) => {
@@ -229,7 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       description: "You've been successfully logged out.",
     });
   };
-
+  
   return (
     <AuthContext.Provider value={{ 
       user, 

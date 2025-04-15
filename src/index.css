@@ -71,7 +71,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
 }
 
@@ -90,5 +90,33 @@
 
   .module-description {
     @apply text-sm text-muted-foreground;
+  }
+  
+  .glass-card {
+    @apply backdrop-blur-md bg-secondary/60 border border-border/40 shadow-lg rounded-xl transition-all;
+  }
+  
+  .auth-container {
+    @apply min-h-screen flex flex-col transition-colors duration-300;
+  }
+  
+  .auth-container.light {
+    @apply bg-gradient-to-br from-lifemate-light to-white;
+  }
+  
+  .auth-container.dark {
+    @apply bg-gradient-to-br from-lifemate-dark to-black;
+  }
+  
+  .auth-card {
+    @apply p-6 rounded-xl border shadow-xl transition-all;
+  }
+  
+  .auth-card.light {
+    @apply bg-white/80 border-border/40;
+  }
+  
+  .auth-card.dark {
+    @apply bg-secondary/60 border-border/40;
   }
 }
