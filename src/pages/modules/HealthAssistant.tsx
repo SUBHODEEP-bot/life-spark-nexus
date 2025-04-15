@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Pills, Clock, Calendar, User, PlusCircle, Activity, X, Heart, Stethoscope } from "lucide-react";
+import { Calendar as CalendarIcon, Pill, Clock, Calendar, User, PlusCircle, Activity, X, Heart, Stethoscope } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -212,7 +212,7 @@ const HealthAssistant = () => {
                     <CardContent className="p-0">
                       <div className="p-4">
                         <div className="flex items-start gap-2">
-                          <Pills className="h-5 w-5 text-red-400 mt-1" />
+                          <Pill className="h-5 w-5 text-red-400 mt-1" />
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                               <div>

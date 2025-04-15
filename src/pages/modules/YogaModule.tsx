@@ -1,13 +1,12 @@
-
 import { useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Activity, Award, Calendar, Camera, CheckCircle, Clock, Play, Flame, Info, Video } from "lucide-react";
+import { Activity, Award, Calendar, Camera, CheckCircle, Clock, Play, Flame, Info, Video, Plus } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
