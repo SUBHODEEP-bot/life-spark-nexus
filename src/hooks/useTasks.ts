@@ -35,7 +35,7 @@ export function useTasks() {
   });
 
   const createTask = useMutation({
-    mutationFn: async (newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (newTask: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
       if (!user) throw new Error('User not authenticated');
 
       const taskToInsert = {

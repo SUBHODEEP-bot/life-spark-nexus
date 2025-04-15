@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "@/components/ui/use-toast";
-import { Calendar as CalendarIcon, Check, Mic, Plus, Trash2, X } from "lucide-react";
+import { Calendar as CalendarIcon, Check, Mic, Plus, Trash2, X, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ const DailyPlanner = () => {
       due_date: values.dueDate.toISOString(),
       priority: values.priority,
       status: 'pending',
+      // The user_id will be added by the useTasks hook from the current authenticated user
     }, {
       onSuccess: () => {
         setIsAddingTask(false);
@@ -142,7 +144,7 @@ const DailyPlanner = () => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={handleVoiceInput}
+                onClick={() => setIsRecording(true)}
                 className={cn(isRecording && "text-red-500 animate-pulse-slow")}
               >
                 <Mic className="h-4 w-4" />
@@ -326,7 +328,10 @@ const DailyPlanner = () => {
                           "rounded-full h-5 w-5 p-0 shrink-0 mt-1",
                           task.status === 'completed' && "bg-lifemate-purple text-white border-lifemate-purple"
                         )}
-                        onClick={() => handleToggleTask(task.id, task.status === 'completed')}
+                        onClick={() => updateTask.mutate({
+                          id: task.id,
+                          status: task.status === 'completed' ? 'pending' : 'completed'
+                        })}
                       >
                         {task.status === 'completed' && <Check className="h-3 w-3" />}
                       </Button>
@@ -345,7 +350,7 @@ const DailyPlanner = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteTask(task.id)}
+                            onClick={() => deleteTask.mutate(task.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -374,8 +379,6 @@ const DailyPlanner = () => {
                             <CalendarIcon className="h-3 w-3 mr-1" />
                             {format(new Date(task.due_date || new Date()), "MMM d")}
                           </Badge>
-
-                          
                         </div>
                       </div>
                     </div>
