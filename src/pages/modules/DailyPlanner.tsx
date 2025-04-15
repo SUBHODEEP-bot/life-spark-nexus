@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "@/components/ui/use-toast";
-import { Calendar as CalendarIcon, Check, Clock, Mic, Plus, Trash2, X } from "lucide-react";
+import { Calendar as CalendarIcon, Check, Mic, Plus, Trash2, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -27,14 +27,7 @@ const taskSchema = z.object({
   description: z.string().optional(),
   dueDate: z.date(),
   priority: z.enum(["low", "medium", "high"]),
-  estimatedTime: z.string().optional(),
 });
-
-type Task = z.infer<typeof taskSchema> & {
-  id: string;
-  completed: boolean;
-  createdAt: Date;
-};
 
 const DailyPlanner = () => {
   const { user } = useAuth();
@@ -60,7 +53,6 @@ const DailyPlanner = () => {
       due_date: values.dueDate.toISOString(),
       priority: values.priority,
       status: 'pending',
-      estimatedTime: values.estimatedTime,
     }, {
       onSuccess: () => {
         setIsAddingTask(false);
@@ -275,19 +267,7 @@ const DailyPlanner = () => {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="estimatedTime"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Estimated Time</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g. 1h 30m" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      
                     </div>
 
                     <div className="flex justify-end pt-2">
@@ -392,15 +372,10 @@ const DailyPlanner = () => {
 
                           <Badge variant="outline" className="bg-secondary/50">
                             <CalendarIcon className="h-3 w-3 mr-1" />
-                            {format(new Date(task.due_date), "MMM d")}
+                            {format(new Date(task.due_date || new Date()), "MMM d")}
                           </Badge>
 
-                          {task.estimatedTime && (
-                            <Badge variant="outline" className="bg-secondary/50">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {task.estimatedTime}
-                            </Badge>
-                          )}
+                          
                         </div>
                       </div>
                     </div>

@@ -3,16 +3,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import type { Task } from '@/types/task';
+import { useAuth } from '@/context/AuthContext';
 
 export function useTasks() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
+      if (!user) return [];
+
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -26,13 +31,21 @@ export function useTasks() {
 
       return data as Task[];
     },
+    enabled: !!user
   });
 
   const createTask = useMutation({
     mutationFn: async (newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const taskToInsert = {
+        ...newTask,
+        user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from('tasks')
-        .insert([newTask])
+        .insert(taskToInsert)
         .select()
         .single();
 
@@ -49,7 +62,7 @@ export function useTasks() {
     onError: (error) => {
       toast({
         title: 'Error creating task',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
     },
@@ -77,7 +90,7 @@ export function useTasks() {
     onError: (error) => {
       toast({
         title: 'Error updating task',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
     },
@@ -102,7 +115,7 @@ export function useTasks() {
     onError: (error) => {
       toast({
         title: 'Error deleting task',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
     },
