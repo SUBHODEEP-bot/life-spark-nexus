@@ -1,9 +1,8 @@
 
 import emailjs from '@emailjs/browser';
 
-// Updated EmailJS credentials
-// These should match your actual EmailJS account details
-const EMAIL_SERVICE_ID = 'service_x6007iv';
+// Updated EmailJS credentials with the correct service ID
+const EMAIL_SERVICE_ID = 'service_lw06cte';
 const EMAIL_TEMPLATE_ID = 'template_l4ztjb1';
 const EMAIL_USER_ID = 'a8Z0Ywd6Efq0mY_tr';
 

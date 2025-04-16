@@ -1,5 +1,5 @@
 
-import { Bell, Menu, Search, Settings, User } from "lucide-react";
+import { Bell, Menu, Moon, Search, Settings, Sun, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,13 +10,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 const Header = ({ toggleSidebar }: HeaderProps) => {
-  const { user, logout } = useAuth();
+  const { user, logout, theme, toggleTheme } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only showing theme elements after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 bg-secondary/80 backdrop-blur-sm border-b border-border/40 px-4 py-3 flex items-center justify-between">
@@ -41,6 +49,24 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
       </div>
 
       <div className="flex items-center gap-2">
+        {mounted && (
+          <div className="flex items-center gap-2 mr-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleTheme} 
+              className="rounded-full"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        )}
+        
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>
