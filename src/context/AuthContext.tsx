@@ -32,7 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pendingPassword, setPendingPassword] = useState<string | null>(null);
   const [otpExpiry, setOtpExpiry] = useState<Date | null>(null);
 
-  // Initialize theme and apply it to document
   useEffect(() => {
     // Check for existing session in localStorage
     const storedUser = localStorage.getItem('lifemate_user');
@@ -54,7 +53,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Apply theme changes to document
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('lifemate_theme', theme);
@@ -125,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expiryTime = new Date();
       expiryTime.setMinutes(expiryTime.getMinutes() + 5);
       
-      // Store OTP and expiry time
+      // First store OTP and expiry time so we don't lose it if email fails
       localStorage.setItem('lifemate_pending_otp', otp);
       localStorage.setItem('lifemate_otp_expiry', expiryTime.toISOString());
       setOtpExpiry(expiryTime);
@@ -174,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expiryTime = new Date();
       expiryTime.setMinutes(expiryTime.getMinutes() + 5);
       
-      // Store new OTP and expiry time
+      // First store new OTP and expiry time
       localStorage.setItem('lifemate_pending_otp', otp);
       localStorage.setItem('lifemate_otp_expiry', expiryTime.toISOString());
       setOtpExpiry(expiryTime);
