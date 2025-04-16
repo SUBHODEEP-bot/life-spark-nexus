@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import { sendOTPEmail } from '@/services/emailService';
 
 interface User {
   id: string;
@@ -28,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState<string | null>(null);
+  const [otpExpiry, setOtpExpiry] = useState<Date | null>(null);
 
   // Initialize theme and apply it to document
   useEffect(() => {
@@ -104,25 +106,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const register = async (name: string, email: string, password: string) => {
     try {
       setIsLoading(true);
       
-      // Mock API call - would be replaced with real backend call
-      // In a real app, we would send registration data to the server
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      // Generate OTP and set expiry time (5 minutes from now)
+      const otp = generateOTP();
+      const expiryTime = new Date();
+      expiryTime.setMinutes(expiryTime.getMinutes() + 5);
       
-      // Store pending registration data for OTP verification
+      // Send OTP email
+      const emailResult = await sendOTPEmail({ email, otp });
+      
+      if (!emailResult.success) {
+        throw new Error('Failed to send verification email');
+      }
+      
+      // Store OTP and expiry time
+      localStorage.setItem('lifemate_pending_otp', otp);
+      localStorage.setItem('lifemate_otp_expiry', expiryTime.toISOString());
+      setOtpExpiry(expiryTime);
+      
+      // Store pending registration data
       setPendingEmail(email);
       setPendingName(name);
-
-      // Generate and "send" OTP (in a real app this would be sent via email)
-      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
-      localStorage.setItem('lifemate_pending_otp', otp);
       
-      // In a real app, this would be sent via API to user's email
-      console.log(`[Development] OTP code: ${otp}`);
-      
+      // Show success message
       toast({
         title: "Verification Required",
         description: "We've sent a verification code to your email. Please check and enter the code.",
@@ -132,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: "Could not complete registration. Please try again.",
+        description: error instanceof Error ? error.message : "Could not complete registration. Please try again.",
         variant: "destructive"
       });
       return false;
@@ -154,12 +167,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setIsLoading(true);
       
-      // Generate and "send" new OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
-      localStorage.setItem('lifemate_pending_otp', otp);
+      // Generate new OTP and set new expiry time
+      const otp = generateOTP();
+      const expiryTime = new Date();
+      expiryTime.setMinutes(expiryTime.getMinutes() + 5);
       
-      // In a real app, this would be sent via API to user's email
-      console.log(`[Development] OTP code resent: ${otp}`);
+      // Send new OTP email
+      const emailResult = await sendOTPEmail({ email: pendingEmail, otp });
+      
+      if (!emailResult.success) {
+        throw new Error('Failed to send verification email');
+      }
+      
+      // Store new OTP and expiry time
+      localStorage.setItem('lifemate_pending_otp', otp);
+      localStorage.setItem('lifemate_otp_expiry', expiryTime.toISOString());
+      setOtpExpiry(expiryTime);
       
       toast({
         title: "Code Resent",
@@ -170,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       toast({
         title: "Failed to resend code",
-        description: "Could not resend verification code. Please try again.",
+        description: error instanceof Error ? error.message : "Could not resend verification code. Please try again.",
         variant: "destructive"
       });
       return false;
@@ -183,44 +206,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       
-      // Get stored OTP - in a real app this would be verified against a server
       const storedOTP = localStorage.getItem('lifemate_pending_otp');
+      const storedExpiry = localStorage.getItem('lifemate_otp_expiry');
       
-      // Mock successful verification
-      // In a real app, we would verify the OTP with the server
-      if (otp === storedOTP || otp === '123456') { // Keep fallback for testing
-        const mockUser = {
-          id: '1',
-          name: pendingName || 'User',
-          email: pendingEmail || 'user@example.com',
-        };
-        
-        setUser(mockUser);
-        localStorage.setItem('lifemate_user', JSON.stringify(mockUser));
-        
-        // Clear pending registration data and OTP
-        setPendingEmail(null);
-        setPendingName(null);
-        localStorage.removeItem('lifemate_pending_otp');
-        
-        toast({
-          title: "Verification Successful!",
-          description: "Your account has been verified and created successfully.",
-        });
-        
-        return true;
-      } else {
-        toast({
-          title: "Invalid Code",
-          description: "The verification code is incorrect. Please try again.",
-          variant: "destructive"
-        });
-        return false;
+      if (!storedOTP || !storedExpiry) {
+        throw new Error('Verification code not found. Please request a new one.');
       }
+      
+      const expiryTime = new Date(storedExpiry);
+      if (new Date() > expiryTime) {
+        throw new Error('Verification code has expired. Please request a new one.');
+      }
+      
+      if (otp !== storedOTP) {
+        throw new Error('Invalid verification code. Please try again.');
+      }
+      
+      // Create mock user after successful verification
+      const mockUser = {
+        id: '1',
+        name: pendingName || 'User',
+        email: pendingEmail || 'user@example.com',
+      };
+      
+      setUser(mockUser);
+      localStorage.setItem('lifemate_user', JSON.stringify(mockUser));
+      
+      // Clear verification data
+      setPendingEmail(null);
+      setPendingName(null);
+      setOtpExpiry(null);
+      localStorage.removeItem('lifemate_pending_otp');
+      localStorage.removeItem('lifemate_otp_expiry');
+      
+      toast({
+        title: "Verification Successful!",
+        description: "Your account has been verified and created successfully.",
+      });
+      
+      return true;
     } catch (error) {
       toast({
         title: "Verification Failed",
-        description: "Could not verify your account. Please try again.",
+        description: error instanceof Error ? error.message : "Could not verify your account. Please try again.",
         variant: "destructive"
       });
       return false;
