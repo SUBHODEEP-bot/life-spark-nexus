@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState<string | null>(null);
+  const [pendingPassword, setPendingPassword] = useState<string | null>(null);
   const [otpExpiry, setOtpExpiry] = useState<Date | null>(null);
 
   // Initialize theme and apply it to document
@@ -62,6 +63,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
+  };
+
+  const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const login = async (email: string, password: string) => {
@@ -106,34 +111,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
   const register = async (name: string, email: string, password: string) => {
     try {
       setIsLoading(true);
+      
+      // Store pending registration data
+      setPendingEmail(email);
+      setPendingName(name);
+      setPendingPassword(password);
       
       // Generate OTP and set expiry time (5 minutes from now)
       const otp = generateOTP();
       const expiryTime = new Date();
       expiryTime.setMinutes(expiryTime.getMinutes() + 5);
       
-      // Send OTP email
-      const emailResult = await sendOTPEmail({ email, otp });
-      
-      if (!emailResult.success) {
-        throw new Error('Failed to send verification email');
-      }
-      
       // Store OTP and expiry time
       localStorage.setItem('lifemate_pending_otp', otp);
       localStorage.setItem('lifemate_otp_expiry', expiryTime.toISOString());
       setOtpExpiry(expiryTime);
       
-      // Store pending registration data
-      setPendingEmail(email);
-      setPendingName(name);
+      // Send OTP email
+      const emailResult = await sendOTPEmail({ email, otp });
+      
+      if (!emailResult.success) {
+        throw new Error('Failed to send verification email. Please try again later.');
+      }
       
       // Show success message
       toast({
@@ -172,17 +174,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const expiryTime = new Date();
       expiryTime.setMinutes(expiryTime.getMinutes() + 5);
       
-      // Send new OTP email
-      const emailResult = await sendOTPEmail({ email: pendingEmail, otp });
-      
-      if (!emailResult.success) {
-        throw new Error('Failed to send verification email');
-      }
-      
       // Store new OTP and expiry time
       localStorage.setItem('lifemate_pending_otp', otp);
       localStorage.setItem('lifemate_otp_expiry', expiryTime.toISOString());
       setOtpExpiry(expiryTime);
+      
+      // Send new OTP email
+      const emailResult = await sendOTPEmail({ email: pendingEmail, otp });
+      
+      if (!emailResult.success) {
+        throw new Error('Failed to send verification email. Please try again later.');
+      }
       
       toast({
         title: "Code Resent",
@@ -235,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear verification data
       setPendingEmail(null);
       setPendingName(null);
+      setPendingPassword(null);
       setOtpExpiry(null);
       localStorage.removeItem('lifemate_pending_otp');
       localStorage.removeItem('lifemate_otp_expiry');

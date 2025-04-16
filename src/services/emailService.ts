@@ -1,7 +1,9 @@
 
 import emailjs from '@emailjs/browser';
 
-const EMAIL_SERVICE_ID = 'service_x6007iv';
+// Updated EmailJS credentials
+// These should match your actual EmailJS account details
+const EMAIL_SERVICE_ID = 'service_2n1rpjq';
 const EMAIL_TEMPLATE_ID = 'template_l4ztjb1';
 const EMAIL_USER_ID = 'a8Z0Ywd6Efq0mY_tr';
 
@@ -12,6 +14,8 @@ interface SendOTPEmailParams {
 
 export const sendOTPEmail = async ({ email, otp }: SendOTPEmailParams) => {
   try {
+    console.log(`Sending OTP ${otp} to ${email}`);
+    
     const response = await emailjs.send(
       EMAIL_SERVICE_ID,
       EMAIL_TEMPLATE_ID,
@@ -22,6 +26,7 @@ export const sendOTPEmail = async ({ email, otp }: SendOTPEmailParams) => {
       EMAIL_USER_ID
     );
 
+    console.log('Email sent successfully:', response);
     return { success: true, response };
   } catch (error) {
     console.error('Error sending OTP email:', error);
