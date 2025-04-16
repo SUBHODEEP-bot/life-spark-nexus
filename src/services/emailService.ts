@@ -1,7 +1,7 @@
 
 import emailjs from '@emailjs/browser';
 
-// Updated EmailJS credentials with the correct service ID
+// EmailJS credentials with the correct service ID
 const EMAIL_SERVICE_ID = 'service_lw06cte';
 const EMAIL_TEMPLATE_ID = 'template_l4ztjb1';
 const EMAIL_USER_ID = 'a8Z0Ywd6Efq0mY_tr';
@@ -15,6 +15,7 @@ export const sendOTPEmail = async ({ email, otp }: SendOTPEmailParams) => {
   try {
     console.log(`Sending OTP ${otp} to ${email}`);
     
+    // Fix: EmailJS expects to_email in the template params
     const response = await emailjs.send(
       EMAIL_SERVICE_ID,
       EMAIL_TEMPLATE_ID,

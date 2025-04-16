@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { sendOTPEmail } from '@/services/emailService';
@@ -72,13 +73,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       
       // Mock API call - would be replaced with real backend call
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      
-      // Mock successful login
       // In a real app, we would verify credentials with the server
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
       
