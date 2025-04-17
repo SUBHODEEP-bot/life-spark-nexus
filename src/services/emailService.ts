@@ -15,13 +15,15 @@ export const sendOTPEmail = async ({ email, otp }: SendOTPEmailParams) => {
   try {
     console.log(`Sending OTP ${otp} to ${email}`);
     
-    // Fix: EmailJS expects to_email in the template params
+    // Corrected params to match EmailJS template expectations
+    // The template has {{email}} instead of {{to_email}}
     const response = await emailjs.send(
       EMAIL_SERVICE_ID,
       EMAIL_TEMPLATE_ID,
       {
-        to_email: email,
-        otp: otp,
+        email: email,       // Changed from to_email to email
+        otp_code: otp,      // Changed from otp to otp_code
+        expiry_time: "5 minutes"
       },
       EMAIL_USER_ID
     );
