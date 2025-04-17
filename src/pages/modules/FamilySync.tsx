@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { 
   Users, CalendarDays, CheckSquare, MapPin, Bell, PlusCircle,
-  UserPlus, MessageSquare, Settings, RefreshCw, Clock, Shield
+  UserPlus, MessageSquare, Settings, RefreshCw, Clock, Shield,
+  Check
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
