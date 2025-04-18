@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 
 interface Message {
   id: string;
@@ -55,6 +56,7 @@ const ChatCompanion = () => {
   ]);
 
   const [inputValue, setInputValue] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -65,7 +67,7 @@ const ChatCompanion = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim() === "") return;
 
     const userMessage: Message = {
@@ -78,35 +80,51 @@ const ChatCompanion = () => {
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInputValue("");
 
-    // Simulate AI response after a short delay
-    setTimeout(() => {
-      let aiResponse = "";
+    try {
+      // Show loading state
+      const loadingToastId = toast({
+        title: "Processing your message",
+        description: "The AI is thinking...",
+      });
+      
+      // Simulate AI response after a short delay
+      setTimeout(() => {
+        let aiResponse = "";
 
-      // Simple response logic based on user input
-      const lowerCaseInput = inputValue.toLowerCase();
-      if (lowerCaseInput.includes("hello") || lowerCaseInput.includes("hi")) {
-        aiResponse = "Hello there! How are you feeling today?";
-      } else if (lowerCaseInput.includes("how are you")) {
-        aiResponse = "I'm just a program, but I'm here and ready to chat with you! How can I help you today?";
-      } else if (lowerCaseInput.includes("sad") || lowerCaseInput.includes("depress") || lowerCaseInput.includes("unhappy")) {
-        aiResponse = "I'm sorry to hear you're feeling down. Remember that it's okay to feel this way sometimes. Would you like to talk about what's bothering you, or perhaps try some mood-boosting activities?";
-      } else if (lowerCaseInput.includes("stress") || lowerCaseInput.includes("anxiety") || lowerCaseInput.includes("worry")) {
-        aiResponse = "Stress and anxiety can be challenging. Have you tried any relaxation techniques lately? Deep breathing, meditation, or even a short walk can sometimes help reduce these feelings.";
-      } else if (lowerCaseInput.includes("happy") || lowerCaseInput.includes("good") || lowerCaseInput.includes("great")) {
-        aiResponse = "That's wonderful to hear! What's been going well for you? Sharing positive experiences can help reinforce those good feelings.";
-      } else {
-        aiResponse = "Thank you for sharing that with me. Would you like to tell me more about how you're feeling today?";
-      }
+        // Simple response logic based on user input
+        const lowerCaseInput = inputValue.toLowerCase();
+        if (lowerCaseInput.includes("hello") || lowerCaseInput.includes("hi")) {
+          aiResponse = "Hello there! How are you feeling today?";
+        } else if (lowerCaseInput.includes("how are you")) {
+          aiResponse = "I'm just a program, but I'm here and ready to chat with you! How can I help you today?";
+        } else if (lowerCaseInput.includes("sad") || lowerCaseInput.includes("depress") || lowerCaseInput.includes("unhappy")) {
+          aiResponse = "I'm sorry to hear you're feeling down. Remember that it's okay to feel this way sometimes. Would you like to talk about what's bothering you, or perhaps try some mood-boosting activities?";
+        } else if (lowerCaseInput.includes("stress") || lowerCaseInput.includes("anxiety") || lowerCaseInput.includes("worry")) {
+          aiResponse = "Stress and anxiety can be challenging. Have you tried any relaxation techniques lately? Deep breathing, meditation, or even a short walk can sometimes help reduce these feelings.";
+        } else if (lowerCaseInput.includes("happy") || lowerCaseInput.includes("good") || lowerCaseInput.includes("great")) {
+          aiResponse = "That's wonderful to hear! What's been going well for you? Sharing positive experiences can help reinforce those good feelings.";
+        } else {
+          aiResponse = "Thank you for sharing that with me. Would you like to tell me more about how you're feeling today?";
+        }
 
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: aiResponse,
-        sender: "ai",
-        timestamp: new Date(),
-      };
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: aiResponse,
+          sender: "ai",
+          timestamp: new Date(),
+        };
 
-      setMessages((prevMessages) => [...prevMessages, aiMessage]);
-    }, 1000);
+        setMessages((prevMessages) => [...prevMessages, aiMessage]);
+        toast.dismiss(loadingToastId);
+      }, 1000);
+    } catch (error) {
+      console.error("Error generating response:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate a response. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -117,6 +135,10 @@ const ChatCompanion = () => {
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   return (
@@ -145,7 +167,7 @@ const ChatCompanion = () => {
               </div>
             </CardHeader>
 
-            <Tabs defaultValue="all" className="flex-1 flex flex-col">
+            <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col">
               <div className="px-2">
                 <TabsList className="grid w-full grid-cols-3 mb-0">
                   <TabsTrigger value="all">All</TabsTrigger>
