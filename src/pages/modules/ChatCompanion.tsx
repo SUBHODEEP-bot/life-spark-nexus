@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { SendHorizontal, Smile, Paperclip, MessageSquare, MoreVertical, SearchIcon, Phone, Video, User, Heart } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,7 +83,7 @@ const ChatCompanion = () => {
     setInputValue("");
 
     // Show loading toast
-    const loadingToastId = toast({
+    const { id: loadingToastId } = toast({
       title: "Processing your message",
       description: "The AI is thinking...",
     });
