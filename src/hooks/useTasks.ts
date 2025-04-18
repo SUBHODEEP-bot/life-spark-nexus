@@ -70,6 +70,11 @@ export function useTasks() {
 
   const updateTask = useMutation({
     mutationFn: async ({ id, ...task }: Partial<Task> & { id: string }) => {
+      // Ensure id is a valid string before using it in the query
+      if (typeof id !== 'string' || !id) {
+        throw new Error('Invalid task ID');
+      }
+      
       const { data, error } = await supabase
         .from('tasks')
         .update(task)
@@ -98,6 +103,11 @@ export function useTasks() {
 
   const deleteTask = useMutation({
     mutationFn: async (id: string) => {
+      // Ensure id is a valid string before using it in the query
+      if (typeof id !== 'string' || !id) {
+        throw new Error('Invalid task ID');
+      }
+      
       const { error } = await supabase
         .from('tasks')
         .delete()
