@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -58,6 +58,7 @@ const ChatCompanion = () => {
   const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,7 +83,7 @@ const ChatCompanion = () => {
 
     try {
       // Show loading state
-      const loadingToastId = toast({
+      const loadingToast = toast({
         title: "Processing your message",
         description: "The AI is thinking...",
       });
@@ -115,7 +116,8 @@ const ChatCompanion = () => {
         };
 
         setMessages((prevMessages) => [...prevMessages, aiMessage]);
-        toast.dismiss(loadingToastId);
+        // Dismiss the loading toast using the returned object's dismiss method
+        loadingToast.dismiss();
       }, 1000);
     } catch (error) {
       console.error("Error generating response:", error);
