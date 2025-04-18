@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Newspaper, Globe, Zap, TrendingUp, Filter, Search, Bookmark, Clock, ThumbsUp, MessageCircle } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Mock news data
@@ -181,157 +181,11 @@ const NewsDigest = () => {
                   Saved
                 </TabsTrigger>
               </TabsList>
-            </Tabs>
             
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search articles..." 
-                className="pl-9 w-full sm:w-[250px]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <TabsContent value="news" className="space-y-4 mt-0">
-            {filteredNews.length > 0 ? (
-              filteredNews.map(article => (
-                <Card key={article.id} className="overflow-hidden">
-                  <div className="sm:flex">
-                    <div className="sm:w-1/3 h-48 sm:h-auto bg-secondary">
-                      <img 
-                        src={article.image} 
-                        alt={article.title} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="sm:w-2/3">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className={getCategoryColor(article.category)}>
-                            {article.category.charAt(0).toUpperCase() + article.category.slice(1)}
-                          </Badge>
-                          <div className="flex items-center text-muted-foreground text-xs">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {article.time}
-                          </div>
-                        </div>
-                        <CardTitle className="text-lg mt-2">{article.title}</CardTitle>
-                        <CardDescription className="flex items-center">
-                          <span>Source: {article.source}</span>
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">{article.summary}</p>
-                        <div className="flex items-center justify-between mt-4">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center">
-                              <ThumbsUp className="h-4 w-4 mr-1 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{article.likes}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <MessageCircle className="h-4 w-4 mr-1 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{article.comments}</span>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleSaveArticle(article.id)}
-                          >
-                            <Bookmark className={`h-4 w-4 mr-1 ${savedArticles.includes(article.id) ? 'fill-primary text-primary' : ''}`} />
-                            {savedArticles.includes(article.id) ? "Saved" : "Save"}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </div>
-                  </div>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-12 bg-secondary/20 rounded-lg">
-                <Newspaper className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-                <p className="mt-4 text-muted-foreground">No news articles match your search</p>
-                {searchQuery && (
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setSearchQuery("")}
-                  >
-                    Clear search
-                  </Button>
-                )}
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="social" className="space-y-4 mt-0">
-            {filteredSocial.length > 0 ? (
-              filteredSocial.map(update => (
-                <Card key={update.id} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-3">
-                      <Avatar>
-                        <AvatarFallback>{update.avatar}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{update.user}</p>
-                            <p className="text-sm text-muted-foreground">{update.handle}</p>
-                          </div>
-                          <div className="flex items-center">
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              {getPlatformIcon(update.platform)}
-                              {update.platform.charAt(0).toUpperCase() + update.platform.slice(1)}
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="mt-3">{update.content}</p>
-                        <div className="flex items-center justify-between mt-4">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center">
-                              <ThumbsUp className="h-4 w-4 mr-1 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{update.likes}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <MessageCircle className="h-4 w-4 mr-1 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{update.comments}</span>
-                            </div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {update.time}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-12 bg-secondary/20 rounded-lg">
-                <Globe className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-                <p className="mt-4 text-muted-foreground">No social updates match your search</p>
-                {searchQuery && (
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setSearchQuery("")}
-                  >
-                    Clear search
-                  </Button>
-                )}
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="saved" className="mt-0">
-            {savedArticles.length > 0 ? (
-              <div className="space-y-4">
-                {mockNews
-                  .filter(article => savedArticles.includes(article.id))
-                  .map(article => (
+              {/* TabsContent sections moved inside Tabs component */}
+              <TabsContent value="news" className="space-y-4 mt-0">
+                {filteredNews.length > 0 ? (
+                  filteredNews.map(article => (
                     <Card key={article.id} className="overflow-hidden">
                       <div className="sm:flex">
                         <div className="sm:w-1/3 h-48 sm:h-auto bg-secondary">
@@ -359,36 +213,183 @@ const NewsDigest = () => {
                           </CardHeader>
                           <CardContent>
                             <p className="text-sm text-muted-foreground">{article.summary}</p>
-                            <div className="flex items-center justify-end mt-4">
+                            <div className="flex items-center justify-between mt-4">
+                              <div className="flex items-center space-x-4">
+                                <div className="flex items-center">
+                                  <ThumbsUp className="h-4 w-4 mr-1 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">{article.likes}</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <MessageCircle className="h-4 w-4 mr-1 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">{article.comments}</span>
+                                </div>
+                              </div>
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
                                 onClick={() => handleSaveArticle(article.id)}
                               >
-                                <Bookmark className="h-4 w-4 mr-1 fill-primary text-primary" />
-                                Remove
+                                <Bookmark className={`h-4 w-4 mr-1 ${savedArticles.includes(article.id) ? 'fill-primary text-primary' : ''}`} />
+                                {savedArticles.includes(article.id) ? "Saved" : "Save"}
                               </Button>
                             </div>
                           </CardContent>
                         </div>
                       </div>
                     </Card>
-                  ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-secondary/20 rounded-lg">
-                <Bookmark className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-                <p className="mt-4 text-muted-foreground">No saved articles yet</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setActiveTab("news")}
-                >
-                  Browse news
-                </Button>
-              </div>
-            )}
-          </TabsContent>
+                  ))
+                ) : (
+                  <div className="text-center py-12 bg-secondary/20 rounded-lg">
+                    <Newspaper className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
+                    <p className="mt-4 text-muted-foreground">No news articles match your search</p>
+                    {searchQuery && (
+                      <Button 
+                        variant="outline" 
+                        className="mt-4"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        Clear search
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="social" className="space-y-4 mt-0">
+                {filteredSocial.length > 0 ? (
+                  filteredSocial.map(update => (
+                    <Card key={update.id} className="overflow-hidden">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-3">
+                          <Avatar>
+                            <AvatarFallback>{update.avatar}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{update.user}</p>
+                                <p className="text-sm text-muted-foreground">{update.handle}</p>
+                              </div>
+                              <div className="flex items-center">
+                                <Badge variant="outline" className="flex items-center gap-1">
+                                  {getPlatformIcon(update.platform)}
+                                  {update.platform.charAt(0).toUpperCase() + update.platform.slice(1)}
+                                </Badge>
+                              </div>
+                            </div>
+                            <p className="mt-3">{update.content}</p>
+                            <div className="flex items-center justify-between mt-4">
+                              <div className="flex items-center space-x-4">
+                                <div className="flex items-center">
+                                  <ThumbsUp className="h-4 w-4 mr-1 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">{update.likes}</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <MessageCircle className="h-4 w-4 mr-1 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">{update.comments}</span>
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {update.time}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-12 bg-secondary/20 rounded-lg">
+                    <Globe className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
+                    <p className="mt-4 text-muted-foreground">No social updates match your search</p>
+                    {searchQuery && (
+                      <Button 
+                        variant="outline" 
+                        className="mt-4"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        Clear search
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="saved" className="mt-0">
+                {savedArticles.length > 0 ? (
+                  <div className="space-y-4">
+                    {mockNews
+                      .filter(article => savedArticles.includes(article.id))
+                      .map(article => (
+                        <Card key={article.id} className="overflow-hidden">
+                          <div className="sm:flex">
+                            <div className="sm:w-1/3 h-48 sm:h-auto bg-secondary">
+                              <img 
+                                src={article.image} 
+                                alt={article.title} 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="sm:w-2/3">
+                              <CardHeader>
+                                <div className="flex items-center justify-between">
+                                  <Badge variant="outline" className={getCategoryColor(article.category)}>
+                                    {article.category.charAt(0).toUpperCase() + article.category.slice(1)}
+                                  </Badge>
+                                  <div className="flex items-center text-muted-foreground text-xs">
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    {article.time}
+                                  </div>
+                                </div>
+                                <CardTitle className="text-lg mt-2">{article.title}</CardTitle>
+                                <CardDescription className="flex items-center">
+                                  <span>Source: {article.source}</span>
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm text-muted-foreground">{article.summary}</p>
+                                <div className="flex items-center justify-end mt-4">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleSaveArticle(article.id)}
+                                  >
+                                    <Bookmark className="h-4 w-4 mr-1 fill-primary text-primary" />
+                                    Remove
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-secondary/20 rounded-lg">
+                    <Bookmark className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
+                    <p className="mt-4 text-muted-foreground">No saved articles yet</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setActiveTab("news")}
+                    >
+                      Browse news
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+            
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search articles..." 
+                className="pl-9 w-full sm:w-[250px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
         
         {/* Right column: Trending and filters */}
