@@ -81,23 +81,21 @@ const ChatCompanion = () => {
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInputValue("");
 
+    // Show loading toast
+    const loadingToastId = toast({
+      title: "Processing your message",
+      description: "The AI is thinking...",
+    });
+
     try {
-      // Show loading state
-      const loadingToast = toast({
-        title: "Processing your message",
-        description: "The AI is thinking...",
-      });
-      
-      // Generate AI response using Gemini
       const aiResponse = await generateGeminiResponse(inputValue);
       
       if (aiResponse.error) {
         toast({
           title: "Error",
-          description: "Failed to generate a response. Please try again.",
+          description: aiResponse.error,
           variant: "destructive",
         });
-        loadingToast.dismiss();
         return;
       }
 
@@ -109,8 +107,6 @@ const ChatCompanion = () => {
       };
 
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
-      loadingToast.dismiss();
-      
     } catch (error) {
       console.error("Error generating response:", error);
       toast({
@@ -118,6 +114,8 @@ const ChatCompanion = () => {
         description: "Failed to generate a response. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      toast.dismiss(loadingToastId);
     }
   };
 

@@ -5,12 +5,15 @@ interface AIResponse {
 }
 
 export const generateGeminiResponse = async (prompt: string): Promise<AIResponse> => {
+  const GEMINI_API_KEY = "AIzaSyB4frRuhdWmCrUfyUojOTYcFJ9HQFqbhTY";
+  const MODEL_NAME = "gemini-1.5-flash-latest";
+  
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${MODEL_NAME}:generateContent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer AIzaSyB4frRuhdWmCrUfyUojOTYcFJ9HQFqbhTY`
+        'Authorization': `Bearer ${GEMINI_API_KEY}`
       },
       body: JSON.stringify({
         contents: [{
@@ -38,10 +41,16 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate AI response');
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to generate AI response');
     }
 
     const data = await response.json();
+    
+    if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response format from Gemini API');
+    }
+
     return {
       text: data.candidates[0].content.parts[0].text
     };
