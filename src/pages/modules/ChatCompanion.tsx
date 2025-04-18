@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { SendHorizontal, Smile, Paperclip, MessageSquare, MoreVertical, SearchIcon, Phone, Video, User, Heart } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { generateGeminiResponse } from "@/utils/aiHelpers";
 
 interface Message {
   id: string;
@@ -88,37 +88,29 @@ const ChatCompanion = () => {
         description: "The AI is thinking...",
       });
       
-      // Simulate AI response after a short delay
-      setTimeout(() => {
-        let aiResponse = "";
-
-        // Simple response logic based on user input
-        const lowerCaseInput = inputValue.toLowerCase();
-        if (lowerCaseInput.includes("hello") || lowerCaseInput.includes("hi")) {
-          aiResponse = "Hello there! How are you feeling today?";
-        } else if (lowerCaseInput.includes("how are you")) {
-          aiResponse = "I'm just a program, but I'm here and ready to chat with you! How can I help you today?";
-        } else if (lowerCaseInput.includes("sad") || lowerCaseInput.includes("depress") || lowerCaseInput.includes("unhappy")) {
-          aiResponse = "I'm sorry to hear you're feeling down. Remember that it's okay to feel this way sometimes. Would you like to talk about what's bothering you, or perhaps try some mood-boosting activities?";
-        } else if (lowerCaseInput.includes("stress") || lowerCaseInput.includes("anxiety") || lowerCaseInput.includes("worry")) {
-          aiResponse = "Stress and anxiety can be challenging. Have you tried any relaxation techniques lately? Deep breathing, meditation, or even a short walk can sometimes help reduce these feelings.";
-        } else if (lowerCaseInput.includes("happy") || lowerCaseInput.includes("good") || lowerCaseInput.includes("great")) {
-          aiResponse = "That's wonderful to hear! What's been going well for you? Sharing positive experiences can help reinforce those good feelings.";
-        } else {
-          aiResponse = "Thank you for sharing that with me. Would you like to tell me more about how you're feeling today?";
-        }
-
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: aiResponse,
-          sender: "ai",
-          timestamp: new Date(),
-        };
-
-        setMessages((prevMessages) => [...prevMessages, aiMessage]);
-        // Dismiss the loading toast using the returned object's dismiss method
+      // Generate AI response using Gemini
+      const aiResponse = await generateGeminiResponse(inputValue);
+      
+      if (aiResponse.error) {
+        toast({
+          title: "Error",
+          description: "Failed to generate a response. Please try again.",
+          variant: "destructive",
+        });
         loadingToast.dismiss();
-      }, 1000);
+        return;
+      }
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponse.text,
+        sender: "ai",
+        timestamp: new Date(),
+      };
+
+      setMessages((prevMessages) => [...prevMessages, aiMessage]);
+      loadingToast.dismiss();
+      
     } catch (error) {
       console.error("Error generating response:", error);
       toast({
