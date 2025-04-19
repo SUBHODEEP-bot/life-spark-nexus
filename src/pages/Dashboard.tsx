@@ -202,7 +202,7 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold">
               {greeting}, {user?.name || 'User'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-gray-50">
               {new Date().toLocaleDateString(undefined, {
               weekday: 'long',
               year: 'numeric',
