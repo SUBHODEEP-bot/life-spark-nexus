@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreVertical, SearchIcon } from "lucide-react";
+import { MoreVertical, SearchIcon, MessageSquare } from "lucide-react";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 
 interface ChatSession {
