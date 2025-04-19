@@ -1,10 +1,11 @@
+
 interface AIResponse {
   text: string;
   error?: string;
 }
 
 export const generateOpenAIResponse = async (prompt: string): Promise<AIResponse> => {
-  const OPENAI_API_KEY = "sk-abc123"; // Replace with your API key or use environment variable
+  const OPENAI_API_KEY = "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";
   
   try {
     // Check if API key exists and is not an empty string
@@ -63,3 +64,4 @@ export const generateOpenAIResponse = async (prompt: string): Promise<AIResponse
 
 // Keep the old function for backward compatibility
 export const generateGeminiResponse = generateOpenAIResponse;
+
