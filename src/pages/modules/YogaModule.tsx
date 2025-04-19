@@ -1,6 +1,7 @@
+
 import { useState } from "react";
-import { format, differenceInDays } from "date-fns";
-import { Activity, Award, Calendar, Camera, CheckCircle, Clock, Play, Flame, Info, Video, Plus } from "lucide-react";
+import { format } from "date-fns";
+import { Activity, Award, Calendar, CheckCircle, Clock, Play, Flame, Info, Video, Plus, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface YogaClass {
   id: string;
@@ -18,6 +19,7 @@ interface YogaClass {
   duration: string; // e.g., "20 min"
   level: "Beginner" | "Intermediate" | "Advanced";
   thumbnail?: string;
+  youtubeId: string;
   completedToday: boolean;
 }
 
@@ -28,6 +30,7 @@ interface YogaPose {
   description: string;
   benefits: string[];
   image?: string;
+  youtubeId?: string;
   level: "Beginner" | "Intermediate" | "Advanced";
 }
 
@@ -37,6 +40,21 @@ interface YogaStreak {
   totalSessions: number;
   lastPracticeDate: Date;
 }
+
+const YoutubeEmbed = ({ youtubeId }: { youtubeId: string }) => {
+  return (
+    <div className="aspect-video w-full">
+      <iframe
+        className="w-full h-full rounded-md"
+        src={`https://www.youtube.com/embed/${youtubeId}`}
+        title="YouTube video player"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      ></iframe>
+    </div>
+  );
+};
 
 const YogaModule = () => {
   // Sample data
@@ -48,6 +66,7 @@ const YogaModule = () => {
       duration: "20 min",
       level: "Beginner",
       thumbnail: "https://images.unsplash.com/photo-1506126613408-eca07ce68773",
+      youtubeId: "J9VnPbdqQ4Q", // 20 Minute Morning Yoga Flow
       completedToday: false,
     },
     {
@@ -57,6 +76,7 @@ const YogaModule = () => {
       duration: "15 min",
       level: "Beginner",
       thumbnail: "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7",
+      youtubeId: "v7AYKMP6rOE", // Yoga For Bedtime
       completedToday: false,
     },
     {
@@ -66,6 +86,7 @@ const YogaModule = () => {
       duration: "30 min",
       level: "Intermediate",
       thumbnail: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b",
+      youtubeId: "apXlxPaMNnM", // Core Yoga Workout
       completedToday: false,
     },
     {
@@ -75,11 +96,12 @@ const YogaModule = () => {
       duration: "25 min",
       level: "Intermediate",
       thumbnail: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b",
+      youtubeId: "iEVnN2R0_vg", // Yoga For Balance
       completedToday: true,
     },
   ]);
 
-  const [poses, _] = useState<YogaPose[]>([
+  const [poses, setPoses] = useState<YogaPose[]>([
     {
       id: "1",
       name: "Downward-Facing Dog",
@@ -87,6 +109,7 @@ const YogaModule = () => {
       description: "This pose stretches the hamstrings, shoulders, calves, arches, hands, and spine while building strength in the arms, shoulders, and legs.",
       benefits: ["Energizes the body", "Stretches shoulders, hamstrings, calves", "Strengthens arms and legs"],
       image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b",
+      youtubeId: "YqOqM79McYY",
       level: "Beginner",
     },
     {
@@ -96,6 +119,7 @@ const YogaModule = () => {
       description: "This balancing pose strengthens the legs and core while improving concentration and balance.",
       benefits: ["Improves balance", "Strengthens thighs, calves, and ankles", "Stretches the groins and inner thighs"],
       image: "https://images.unsplash.com/photo-1566501206188-5dd0cf160a0e",
+      youtubeId: "wdln9qWYloU",
       level: "Beginner",
     },
     {
@@ -105,6 +129,7 @@ const YogaModule = () => {
       description: "This standing pose strengthens and stretches the legs and ankles, while also expanding the chest and shoulders.",
       benefits: ["Strengthens legs and opens hips", "Builds stamina and concentration", "Stimulates abdominal organs"],
       image: "https://images.unsplash.com/photo-1510894347713-fc3ed6fdf539",
+      youtubeId: "4Ejz7IgODlU",
       level: "Beginner",
     },
   ]);
@@ -117,7 +142,8 @@ const YogaModule = () => {
   });
 
   const [selectedClass, setSelectedClass] = useState<YogaClass | null>(null);
-  const [showCamera, setShowCamera] = useState(false);
+  const [selectedPose, setSelectedPose] = useState<YogaPose | null>(null);
+  const { toast } = useToast();
 
   // Mark a class as completed
   const markAsCompleted = (classId: string) => {
@@ -126,11 +152,11 @@ const YogaModule = () => {
         c.id === classId ? { ...c, completedToday: true } : c
       )
     );
-  };
-
-  // Toggle camera for pose detection
-  const toggleCamera = () => {
-    setShowCamera(!showCamera);
+    
+    toast({
+      title: "Practice completed",
+      description: "Great job! Your progress has been saved.",
+    });
   };
 
   return (
@@ -138,7 +164,7 @@ const YogaModule = () => {
       <header>
         <h1 className="text-3xl font-bold">YOUR YOGA</h1>
         <p className="text-muted-foreground">
-          Daily practice, custom routines, and AI-powered pose detection
+          Daily practice, custom routines, and guided videos
         </p>
       </header>
 
@@ -286,20 +312,7 @@ const YogaModule = () => {
                   </DialogHeader>
 
                   <div className="grid gap-6">
-                    {selectedClass.thumbnail && (
-                      <div className="relative h-60 rounded-md overflow-hidden">
-                        <img
-                          src={selectedClass.thumbnail}
-                          alt={selectedClass.title}
-                          className="object-cover w-full h-full"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Button size="lg" className="bg-lifemate-purple hover:bg-lifemate-purple-dark">
-                            <Play className="h-5 w-5 mr-2" /> Start Practice
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                    <YoutubeEmbed youtubeId={selectedClass.youtubeId} />
 
                     <div className="space-y-4">
                       <div>
@@ -342,16 +355,15 @@ const YogaModule = () => {
                     </div>
 
                     <div className="flex justify-between">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={toggleCamera}
-                          className={cn(showCamera && "bg-lifemate-purple text-white")}
-                        >
-                          <Camera className="h-4 w-4 mr-2" />
-                          {showCamera ? "Disable" : "Enable"} Pose Detection
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          window.open(`https://www.youtube.com/watch?v=${selectedClass.youtubeId}`, '_blank');
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Open in YouTube
+                      </Button>
 
                       <Button
                         onClick={() => {
@@ -363,20 +375,6 @@ const YogaModule = () => {
                         Mark as Completed
                       </Button>
                     </div>
-
-                    {showCamera && (
-                      <div className="mt-3">
-                        <div className="relative bg-black/90 h-64 rounded-md flex items-center justify-center">
-                          <div className="text-center text-muted-foreground">
-                            <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>Camera feed would appear here</p>
-                            <p className="text-xs mt-2">
-                              TensorFlow.js would analyze your pose in real-time
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </DialogContent>
               )}
@@ -505,72 +503,79 @@ const YogaModule = () => {
                     </p>
                   </CardContent>
                   <CardFooter className="px-4 py-3 bg-secondary/40 flex justify-between">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Info className="h-4 w-4 mr-1" /> Details
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>{pose.name}</DialogTitle>
-                          <DialogDescription>{pose.sanskritName}</DialogDescription>
-                        </DialogHeader>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedPose(pose)}
+                    >
+                      <Info className="h-4 w-4 mr-1" /> Details
+                    </Button>
 
-                        <div className="grid gap-4">
-                          {pose.image && (
-                            <div className="aspect-video bg-secondary/40 rounded-md overflow-hidden">
-                              <img
-                                src={pose.image}
-                                alt={pose.name}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
-                          )}
-
-                          <div>
-                            <h3 className="font-semibold mb-2">Description</h3>
-                            <p className="text-muted-foreground">
-                              {pose.description}
-                            </p>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold mb-2">Benefits</h3>
-                            <ul className="space-y-1">
-                              {pose.benefits.map((benefit, index) => (
-                                <li
-                                  key={index}
-                                  className="flex items-start gap-2 text-muted-foreground"
-                                >
-                                  <span className="text-lifemate-purple mt-1">•</span>
-                                  <span>{benefit}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="pt-2 flex justify-center gap-4">
-                            <Button variant="outline" className="flex-1">
-                              <Camera className="h-4 w-4 mr-2" />
-                              Try with Camera
-                            </Button>
-                            <Button className="flex-1">
-                              <Video className="h-4 w-4 mr-2" />
-                              Watch Tutorial
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-
-                    <Button variant="outline" size="sm">
-                      <Camera className="h-4 w-4 mr-1" /> Try Pose
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        if (pose.youtubeId) {
+                          window.open(`https://www.youtube.com/watch?v=${pose.youtubeId}`, '_blank');
+                        }
+                      }}
+                    >
+                      <Video className="h-4 w-4 mr-1" /> Tutorial
                     </Button>
                   </CardFooter>
                 </Card>
               ))}
             </div>
+
+            {/* Pose Detail Dialog */}
+            <Dialog open={!!selectedPose} onOpenChange={() => setSelectedPose(null)}>
+              {selectedPose && (
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>{selectedPose.name}</DialogTitle>
+                    <DialogDescription>{selectedPose.sanskritName}</DialogDescription>
+                  </DialogHeader>
+
+                  <div className="grid gap-4">
+                    {selectedPose.youtubeId ? (
+                      <YoutubeEmbed youtubeId={selectedPose.youtubeId} />
+                    ) : (
+                      selectedPose.image && (
+                        <div className="aspect-video bg-secondary/40 rounded-md overflow-hidden">
+                          <img
+                            src={selectedPose.image}
+                            alt={selectedPose.name}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      )
+                    )}
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Description</h3>
+                      <p className="text-muted-foreground">
+                        {selectedPose.description}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Benefits</h3>
+                      <ul className="space-y-1">
+                        {selectedPose.benefits.map((benefit, index) => (
+                          <li
+                            key={index}
+                            className="flex items-start gap-2 text-muted-foreground"
+                          >
+                            <span className="text-lifemate-purple mt-1">•</span>
+                            <span>{benefit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </DialogContent>
+              )}
+            </Dialog>
 
             <div className="flex justify-center">
               <Button variant="outline">
@@ -602,7 +607,6 @@ const YogaModule = () => {
                   and prepare for the day ahead.
                 </p>
                 
-                <p className="text-sm font-medium mb-2">Routine Settings</p>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -622,9 +626,6 @@ const YogaModule = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <p className="text-sm">Intensity</p>
-                    <Slider defaultValue={[30]} max={100} step={1} />
-                    
                     <p className="text-sm">Focus areas</p>
                     <div className="flex gap-2 flex-wrap">
                       <Badge variant="outline">Core</Badge>
@@ -651,7 +652,6 @@ const YogaModule = () => {
                   your body and mind for restful sleep.
                 </p>
                 
-                <p className="text-sm font-medium mb-2">Routine Settings</p>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -671,9 +671,6 @@ const YogaModule = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <p className="text-sm">Intensity</p>
-                    <Slider defaultValue={[15]} max={100} step={1} />
-                    
                     <p className="text-sm">Focus areas</p>
                     <div className="flex gap-2 flex-wrap">
                       <Badge variant="outline">Relaxation</Badge>

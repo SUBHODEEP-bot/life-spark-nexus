@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { generateGeminiResponse } from "@/utils/aiHelpers";
+import { generateOpenAIResponse } from "@/utils/aiHelpers";
 
 interface Message {
   id: string;
@@ -29,7 +29,7 @@ const ChatCompanion = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hello! I'm your AI Chat Companion. How can I help you today?",
+      content: "Hello! I'm your AI Chat Companion powered by OpenAI. How can I help you today?",
       sender: "ai",
       timestamp: new Date(Date.now() - 60000),
     },
@@ -90,7 +90,7 @@ const ChatCompanion = () => {
     const loadingToastId = id;
 
     try {
-      const aiResponse = await generateGeminiResponse(inputValue);
+      const aiResponse = await generateOpenAIResponse(inputValue);
       
       if (aiResponse.error) {
         toast({
@@ -138,7 +138,7 @@ const ChatCompanion = () => {
   return (
     <div className="container max-w-6xl mx-auto space-y-8">
       <header>
-        <h1 className="text-3xl font-bold">AI Chat Companion</h1>
+        <h1 className="text-3xl font-bold">AI Chat Companion (OpenAI)</h1>
         <p className="text-muted-foreground">
           Talk about your day, feelings, or anything on your mind
         </p>

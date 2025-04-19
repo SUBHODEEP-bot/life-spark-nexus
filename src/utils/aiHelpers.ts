@@ -1,50 +1,40 @@
-
 interface AIResponse {
   text: string;
   error?: string;
 }
 
-export const generateGeminiResponse = async (prompt: string): Promise<AIResponse> => {
-  const GEMINI_API_KEY = "AIzaSyB4frRuhdWmCrUfyUojOTYcFJ9HQFqbhTY";
-  const MODEL_NAME = "gemini-1.5-flash-latest";
+export const generateOpenAIResponse = async (prompt: string): Promise<AIResponse> => {
+  const OPENAI_API_KEY = "sk-abc123"; // Replace with your API key or use environment variable
   
   try {
     // Check if API key exists and is not an empty string
-    if (!GEMINI_API_KEY) {
+    if (!OPENAI_API_KEY) {
       return {
-        text: "API key is missing. Please configure a valid Gemini API key.",
+        text: "API key is missing. Please configure a valid OpenAI API key.",
         error: "Missing API key"
       };
     }
     
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${MODEL_NAME}:generateContent`, {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY  // Using x-goog-api-key for Gemini API
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        },
-        safetySettings: [
+        model: "gpt-4o-mini",
+        messages: [
           {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            role: "system",
+            content: "You are a helpful AI assistant that provides thoughtful, empathetic responses."
           },
           {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            role: "user",
+            content: prompt
           }
-        ]
+        ],
+        temperature: 0.7,
+        max_tokens: 1024
       })
     });
 
@@ -55,12 +45,12 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
 
     const data = await response.json();
     
-    if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Invalid response format from Gemini API');
+    if (!data.choices || !data.choices[0]?.message?.content) {
+      throw new Error('Invalid response format from OpenAI API');
     }
 
     return {
-      text: data.candidates[0].content.parts[0].text
+      text: data.choices[0].message.content
     };
   } catch (error) {
     console.error('Error generating AI response:', error);
@@ -70,3 +60,6 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
     };
   }
 };
+
+// Keep the old function for backward compatibility
+export const generateGeminiResponse = generateOpenAIResponse;

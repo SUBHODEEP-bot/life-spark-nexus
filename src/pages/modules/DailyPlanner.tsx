@@ -3,8 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "@/components/ui/use-toast";
-import { Calendar as CalendarIcon, Check, Mic, Plus, Trash2, X, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Check, Plus, Trash2, X, Clock, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,10 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/context/AuthContext";
-import { useTasks } from "@/hooks/useTasks";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 // Task schema
 const taskSchema = z.object({
@@ -30,12 +26,47 @@ const taskSchema = z.object({
   priority: z.enum(["low", "medium", "high"]),
 });
 
+type Task = {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate: Date;
+  priority: "low" | "medium" | "high";
+  completed: boolean;
+};
+
 const DailyPlanner = () => {
-  const { user } = useAuth();
-  const { tasks, isLoading, createTask, updateTask, deleteTask } = useTasks();
-  const [isRecording, setIsRecording] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      id: "1",
+      title: "Complete project proposal",
+      description: "Finish the draft and send it to the team for review",
+      dueDate: new Date(),
+      priority: "high",
+      completed: false,
+    },
+    {
+      id: "2",
+      title: "Weekly team meeting",
+      description: "Discuss progress and upcoming milestones",
+      dueDate: new Date(Date.now() + 86400000), // Tomorrow
+      priority: "medium",
+      completed: false,
+    },
+    {
+      id: "3",
+      title: "Exercise",
+      description: "30 minutes of yoga or jogging",
+      dueDate: new Date(),
+      priority: "medium",
+      completed: true,
+    },
+  ]);
+  
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
@@ -48,52 +79,50 @@ const DailyPlanner = () => {
   });
 
   const handleSubmit = (values: z.infer<typeof taskSchema>) => {
-    createTask.mutate({
-      title: values.title,
-      description: values.description,
-      due_date: values.dueDate.toISOString(),
-      priority: values.priority,
-      status: 'pending',
-      // The user_id will be added by the useTasks hook from the current authenticated user
-    }, {
-      onSuccess: () => {
-        setIsAddingTask(false);
-        form.reset();
-      }
-    });
-  };
-
-  const handleToggleTask = (id: string, completed: boolean) => {
-    updateTask.mutate({
-      id,
-      status: completed ? 'completed' : 'pending'
-    });
-  };
-
-  const handleDeleteTask = (id: string) => {
-    deleteTask.mutate(id);
-  };
-
-  const handleVoiceInput = () => {
-    setIsRecording(true);
+    setIsLoading(true);
     
-    // Simulate voice recognition
+    // Simulate API request
     setTimeout(() => {
-      setIsRecording(false);
-      setIsAddingTask(true);
-      form.setValue("title", "Task from voice input");
-      form.setValue("description", "This task was created using voice input");
+      const newTask: Task = {
+        id: Date.now().toString(),
+        title: values.title,
+        description: values.description,
+        dueDate: values.dueDate,
+        priority: values.priority,
+        completed: false,
+      };
+      
+      setTasks([...tasks, newTask]);
+      setIsAddingTask(false);
+      form.reset();
+      setIsLoading(false);
       
       toast({
-        title: "Voice Input Detected",
-        description: "Your voice input has been processed.",
+        title: "Task created",
+        description: "Your new task has been added to your daily plan.",
       });
-    }, 2000);
+    }, 500);
+  };
+
+  const toggleTaskCompletion = (id: string) => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
+  const deleteTask = (id: string) => {
+    setTasks(tasks.filter((task) => task.id !== id));
+    toast({
+      title: "Task deleted",
+      description: "The task has been removed from your plan.",
+    });
   };
 
   const filteredTasks = tasks.filter((task) => {
-    if (filter === "pending") return task.status !== 'completed';
-    if (filter === "completed") return task.status === 'completed';
+    if (filter === "pending") return !task.completed;
+    if (filter === "completed") return task.completed;
     return true;
   });
 
@@ -110,21 +139,12 @@ const DailyPlanner = () => {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="container max-w-5xl mx-auto p-8 text-center">
-        <h2 className="text-2xl font-bold mb-4">Please log in to use the Daily Planner</h2>
-        <p className="text-muted-foreground">You need to be logged in to view and manage your tasks.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="container max-w-5xl mx-auto space-y-8">
       <header>
-        <h1 className="text-3xl font-bold">AI Daily Planner</h1>
+        <h1 className="text-3xl font-bold">Daily Planner</h1>
         <p className="text-muted-foreground">
-          Organize your day, manage tasks and get AI-powered suggestions
+          Organize your day and manage tasks efficiently
         </p>
       </header>
 
@@ -140,19 +160,9 @@ const DailyPlanner = () => {
               </TabsList>
             </Tabs>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsRecording(true)}
-                className={cn(isRecording && "text-red-500 animate-pulse-slow")}
-              >
-                <Mic className="h-4 w-4" />
-              </Button>
-              <Button onClick={() => setIsAddingTask(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Add Task
-              </Button>
-            </div>
+            <Button onClick={() => setIsAddingTask(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Add Task
+            </Button>
           </div>
 
           {isAddingTask && (
@@ -203,7 +213,7 @@ const DailyPlanner = () => {
                       )}
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="dueDate"
@@ -234,9 +244,6 @@ const DailyPlanner = () => {
                                   mode="single"
                                   selected={field.value}
                                   onSelect={field.onChange}
-                                  disabled={(date) =>
-                                    date < new Date(new Date().setHours(0, 0, 0, 0))
-                                  }
                                   initialFocus
                                 />
                               </PopoverContent>
@@ -268,12 +275,19 @@ const DailyPlanner = () => {
                           </FormItem>
                         )}
                       />
-
-                      
                     </div>
 
                     <div className="flex justify-end pt-2">
-                      <Button type="submit">Save Task</Button>
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Task"
+                        )}
+                      </Button>
                     </div>
                   </form>
                 </Form>
@@ -281,31 +295,7 @@ const DailyPlanner = () => {
             </Card>
           )}
 
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <Card key={i} className="border border-border/40">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Skeleton className="rounded-full h-5 w-5 shrink-0 mt-1" />
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-8 w-8 rounded-full" />
-                        </div>
-                        <Skeleton className="h-4 w-48 mt-1" />
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <Skeleton className="h-5 w-16 rounded-md" />
-                          <Skeleton className="h-5 w-16 rounded-md" />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : filteredTasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <div className="bg-secondary/40 rounded-lg border border-border/40 p-6 text-center">
               <p className="text-muted-foreground">No tasks found</p>
             </div>
@@ -316,7 +306,7 @@ const DailyPlanner = () => {
                   key={task.id}
                   className={cn(
                     "border border-border/40",
-                    task.status === 'completed' && "bg-secondary/30 opacity-75"
+                    task.completed && "bg-secondary/30 opacity-75"
                   )}
                 >
                   <CardContent className="p-4">
@@ -326,14 +316,11 @@ const DailyPlanner = () => {
                         size="icon"
                         className={cn(
                           "rounded-full h-5 w-5 p-0 shrink-0 mt-1",
-                          task.status === 'completed' && "bg-lifemate-purple text-white border-lifemate-purple"
+                          task.completed && "bg-lifemate-purple text-white border-lifemate-purple"
                         )}
-                        onClick={() => updateTask.mutate({
-                          id: task.id,
-                          status: task.status === 'completed' ? 'pending' : 'completed'
-                        })}
+                        onClick={() => toggleTaskCompletion(task.id)}
                       >
-                        {task.status === 'completed' && <Check className="h-3 w-3" />}
+                        {task.completed && <Check className="h-3 w-3" />}
                       </Button>
 
                       <div className="flex-1 min-w-0">
@@ -341,7 +328,7 @@ const DailyPlanner = () => {
                           <h3
                             className={cn(
                               "font-medium line-clamp-1",
-                              task.status === 'completed' && "line-through text-muted-foreground"
+                              task.completed && "line-through text-muted-foreground"
                             )}
                           >
                             {task.title}
@@ -350,7 +337,7 @@ const DailyPlanner = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteTask.mutate(task.id)}
+                            onClick={() => deleteTask(task.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -360,7 +347,7 @@ const DailyPlanner = () => {
                           <p
                             className={cn(
                               "text-sm text-muted-foreground mt-1",
-                              task.status === 'completed' && "line-through"
+                              task.completed && "line-through"
                             )}
                           >
                             {task.description}
@@ -377,7 +364,7 @@ const DailyPlanner = () => {
 
                           <Badge variant="outline" className="bg-secondary/50">
                             <CalendarIcon className="h-3 w-3 mr-1" />
-                            {format(new Date(task.due_date || new Date()), "MMM d")}
+                            {format(task.dueDate, "MMM d")}
                           </Badge>
                         </div>
                       </div>
@@ -403,18 +390,17 @@ const DailyPlanner = () => {
                     <div
                       className="h-full bg-lifemate-purple"
                       style={{
-                        width: `${
-                          tasks.length > 0
-                            ? Math.round(
-                                (tasks.filter((t) => t.status === 'completed').length / tasks.length) * 100
-                              )
-                            : 0
-                        }%`,
+                        width: `${tasks.length > 0
+                          ? Math.round(
+                            (tasks.filter((t) => t.completed).length / tasks.length) * 100
+                          )
+                          : 0
+                          }%`,
                       }}
                     />
                   </div>
                   <span className="text-sm">
-                    {tasks.filter((t) => t.status === 'completed').length}/{tasks.length}
+                    {tasks.filter((t) => t.completed).length}/{tasks.length}
                   </span>
                 </div>
               </div>
@@ -440,8 +426,8 @@ const DailyPlanner = () => {
 
           <Card className="bg-lifemate-purple/10 border-lifemate-purple/30">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">AI Suggestions</CardTitle>
-              <CardDescription>Based on your schedule</CardDescription>
+              <CardTitle className="text-lg">Tips for Productivity</CardTitle>
+              <CardDescription>Simple tips to help you stay on track</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -452,35 +438,31 @@ const DailyPlanner = () => {
                   <div>
                     <p className="text-sm font-medium">Focus on high priority tasks first</p>
                     <p className="text-xs text-muted-foreground">
-                      You have 1 high priority task due today
+                      Start with your most important tasks while you have energy
                     </p>
                   </div>
                 </div>
-
-                <Separator />
 
                 <div className="flex items-start gap-2">
                   <div className="mt-0.5">
                     <Clock className="h-4 w-4 text-lifemate-purple" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Schedule a break after 2 hours</p>
+                    <p className="text-sm font-medium">Take regular breaks</p>
                     <p className="text-xs text-muted-foreground">
-                      To maintain productivity throughout the day
+                      Short breaks help maintain focus and productivity
                     </p>
                   </div>
                 </div>
-
-                <Separator />
 
                 <div className="flex items-start gap-2">
                   <div className="mt-0.5">
                     <Clock className="h-4 w-4 text-lifemate-purple" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Your most productive hours</p>
+                    <p className="text-sm font-medium">Review your plan regularly</p>
                     <p className="text-xs text-muted-foreground">
-                      10:00 AM - 12:00 PM based on your patterns
+                      Adjust your tasks based on changing priorities
                     </p>
                   </div>
                 </div>
