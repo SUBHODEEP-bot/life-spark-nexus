@@ -23,7 +23,7 @@ export const generateOpenAIResponse = async (prompt: string): Promise<AIResponse
         'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-3.5-turbo", // Fallback to a model with potentially higher quota limits
         messages: [
           {
             role: "system",
@@ -41,6 +41,15 @@ export const generateOpenAIResponse = async (prompt: string): Promise<AIResponse
 
     if (!response.ok) {
       const errorData = await response.json();
+      
+      // Handle quota exceeded error specifically
+      if (errorData.error?.code === 'insufficient_quota') {
+        return {
+          text: "I apologize, but the OpenAI API quota has been exceeded. Please check your billing details on the OpenAI platform or try again later.",
+          error: "API quota exceeded"
+        };
+      }
+      
       throw new Error(errorData.error?.message || 'Failed to generate AI response');
     }
 
@@ -55,13 +64,22 @@ export const generateOpenAIResponse = async (prompt: string): Promise<AIResponse
     };
   } catch (error) {
     console.error('Error generating AI response:', error);
+    
+    // Check if error message contains information about quota
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    if (errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('billing')) {
+      return {
+        text: "I apologize, but the OpenAI API quota has been exceeded. Please check your billing details on the OpenAI platform or try again later.",
+        error: "API quota exceeded"
+      };
+    }
+    
     return {
       text: "I apologize, but I'm having trouble processing your message right now. Could you please try again?",
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: errorMsg
     };
   }
 };
 
 // Keep the old function for backward compatibility
 export const generateGeminiResponse = generateOpenAIResponse;
-

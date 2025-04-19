@@ -55,6 +55,8 @@ const ChatCompanion = () => {
 
   const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [apiStatus, setApiStatus] = useState<'ready' | 'error'>('ready');
+  const [apiErrorMessage, setApiErrorMessage] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -93,8 +95,26 @@ const ChatCompanion = () => {
           description: aiResponse.error,
           variant: "destructive",
         });
+        
+        if (aiResponse.error.includes("quota")) {
+          setApiStatus('error');
+          setApiErrorMessage("API quota exceeded. Please check your OpenAI billing details.");
+        }
+        
+        // Still add the error message as an AI response
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: aiResponse.text,
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        
+        setMessages((prevMessages) => [...prevMessages, aiMessage]);
         return;
       }
+
+      setApiStatus('ready');
+      setApiErrorMessage(undefined);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -111,6 +131,9 @@ const ChatCompanion = () => {
         description: "Failed to generate a response. Please try again.",
         variant: "destructive",
       });
+      
+      setApiStatus('error');
+      setApiErrorMessage("Failed to connect to OpenAI API. Please try again later.");
     } finally {
       toast.dismiss(id);
     }
@@ -127,6 +150,8 @@ const ChatCompanion = () => {
       <ChatHeader 
         title="AI Chat Companion (OpenAI)" 
         description="Talk about your day, feelings, or anything on your mind"
+        apiStatus={apiStatus}
+        errorMessage={apiErrorMessage}
       />
 
       <div className="flex flex-col md:flex-row gap-6">
