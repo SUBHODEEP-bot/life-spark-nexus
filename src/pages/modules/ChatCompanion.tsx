@@ -26,7 +26,7 @@ const ChatCompanion = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hello! I'm your AI Chat Companion powered by OpenAI. How can I help you today?",
+      content: "Hello! I'm your AI Chat Companion powered by Google's Gemini. How can I help you today?",
       sender: "ai",
       timestamp: new Date(Date.now() - 60000),
     },
@@ -148,7 +148,7 @@ const ChatCompanion = () => {
   return (
     <div className="container max-w-6xl mx-auto space-y-8">
       <ChatHeader 
-        title="AI Chat Companion (OpenAI)" 
+        title="AI Chat Companion (Gemini)" 
         description="Talk about your day, feelings, or anything on your mind"
         apiStatus={apiStatus}
         errorMessage={apiErrorMessage}
