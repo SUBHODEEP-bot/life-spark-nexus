@@ -83,10 +83,11 @@ const ChatCompanion = () => {
     setInputValue("");
 
     // Show loading toast
-    const loadingToastId = toast({
+    const { id } = toast({
       title: "Processing your message",
       description: "The AI is thinking...",
-    }).id; // Extract just the ID string from the toast return value
+    });
+    const loadingToastId = id;
 
     try {
       const aiResponse = await generateGeminiResponse(inputValue);

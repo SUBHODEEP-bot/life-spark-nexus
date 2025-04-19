@@ -9,8 +9,8 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
   const MODEL_NAME = "gemini-1.5-flash-latest";
   
   try {
-    // Check if API key is valid
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "") {
+    // Check if API key exists and is not an empty string
+    if (!GEMINI_API_KEY) {
       return {
         text: "API key is missing. Please configure a valid Gemini API key.",
         error: "Missing API key"
@@ -21,7 +21,7 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY  // Changed from 'Authorization': `Bearer ${GEMINI_API_KEY}`
+        'x-goog-api-key': GEMINI_API_KEY  // Using x-goog-api-key for Gemini API
       },
       body: JSON.stringify({
         contents: [{
