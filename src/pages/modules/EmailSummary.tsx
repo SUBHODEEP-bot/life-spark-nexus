@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Mail, Check, RefreshCw, Play, Pause, Volume2, ArrowRight, Star, Trash, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ const EmailSummary = () => {
   const [playingEmailId, setPlayingEmailId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredEmails, setFilteredEmails] = useState<Email[]>([]);
-  const [activeTab, setActiveTab] = useState("inbox");
+  const [activeTab, setActiveTab] = useState<"inbox" | "important" | "archived">("inbox");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -126,7 +125,7 @@ const EmailSummary = () => {
     
     setTimeout(() => {
       // Add a new email at the top
-      const newEmail = {
+      const newEmail: Email = {
         id: `new-${Date.now()}`,
         subject: "Urgent: Team Meeting Update",
         sender: "Sarah Johnson <sarah@company.com>",
@@ -170,7 +169,7 @@ const EmailSummary = () => {
 
   const archiveEmail = (id: string) => {
     setEmails(emails.map(email => 
-      email.id === id ? { ...email, folder: "archived" } : email
+      email.id === id ? { ...email, folder: "archived" as const } : email
     ));
     toast({
       title: "Email archived",
