@@ -19,6 +19,11 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'sans': ['Inter', 'system-ui', 'sans-serif'],
+				'poppins': ['Poppins', 'system-ui', 'sans-serif'],
+				'sora': ['Sora', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -56,14 +61,19 @@ export default {
 				lifemate: {
 					purple: {
 						DEFAULT: '#9b87f5',
-						dark: '#7E69AB'
+						dark: '#7E69AB',
+						light: '#D6BCFA'
 					},
 					dark: '#1A1F2C',
 					gray: '#8E9196',
 					light: '#F1F1F1',
 					offwhite: '#eee',
 					blue: '#D3E4FD',
-					orange: '#F97316'
+					orange: '#F97316',
+					yellow: '#FEF7CD',
+					green: '#F2FCE2',
+					pink: '#FFDEE2',
+					peach: '#FDE1D3'
 				}
 			},
 			borderRadius: {
@@ -95,12 +105,69 @@ export default {
 					"50%": {
 						opacity: "0.5"
 					}
+				},
+				"float": {
+					"0%, 100%": {
+						transform: "translateY(0)"
+					},
+					"50%": {
+						transform: "translateY(-10px)"
+					}
+				},
+				"slide-up": {
+					"0%": {
+						transform: "translateY(20px)",
+						opacity: "0" 
+					},
+					"100%": {
+						transform: "translateY(0)",
+						opacity: "1"
+					}
+				},
+				"slide-right": {
+					"0%": {
+						transform: "translateX(-20px)",
+						opacity: "0"
+					},
+					"100%": {
+						transform: "translateX(0)",
+						opacity: "1"
+					}
+				},
+				"scale-up": {
+					"0%": {
+						transform: "scale(0.95)",
+						opacity: "0"
+					},
+					"100%": {
+						transform: "scale(1)",
+						opacity: "1"
+					}
+				},
+				"rotate-3d": {
+					"0%": {
+						transform: "perspective(1000px) rotateY(0deg)"
+					},
+					"100%": {
+						transform: "perspective(1000px) rotateY(10deg)"
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				"pulse-slow": "pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+				"pulse-slow": "pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+				"float": "float 6s ease-in-out infinite",
+				"slide-up": "slide-up 0.6s ease-out",
+				"slide-right": "slide-right 0.6s ease-out",
+				"scale-up": "scale-up 0.5s ease-out",
+				"rotate-3d": "rotate-3d 3s ease-in-out alternate infinite"
+			},
+			boxShadow: {
+				'glow': '0 0 15px rgba(155, 135, 245, 0.5)',
+				'3d': '10px 10px 20px rgba(0, 0, 0, 0.2)',
+				'glass': '0 8px 32px rgba(0, 0, 0, 0.08)',
+				'neon': '0 0 8px rgba(155, 135, 245, 0.6)'
 			}
 		}
 	},

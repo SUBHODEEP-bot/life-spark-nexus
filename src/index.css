@@ -1,11 +1,13 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 240 25% 98%;
     --foreground: 240 10% 3.9%;
 
     --card: 0 0% 100%;
@@ -33,11 +35,11 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 240 10% 8%;
     --foreground: 0 0% 98%;
 
     --card: 240 10% 3.9%;
@@ -70,22 +72,30 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    @apply bg-background text-foreground font-sans transition-colors duration-300;
   }
 }
 
 @layer components {
   .module-card {
-    @apply bg-secondary/80 hover:bg-secondary/90 backdrop-blur-sm rounded-lg p-5 border border-border/30 shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] cursor-pointer overflow-hidden relative;
+    @apply bg-secondary/80 hover:bg-secondary/90 backdrop-blur-sm rounded-lg p-5 border border-border/30 shadow-glass transition-all duration-500 hover:shadow-3d hover:scale-[1.02] cursor-pointer overflow-hidden relative;
+  }
+
+  .module-card:hover .module-icon {
+    @apply scale-110 shadow-glow;
   }
 
   .module-icon {
-    @apply p-3 rounded-lg bg-lifemate-purple/20 text-lifemate-purple mb-3 inline-block;
+    @apply p-3 rounded-lg bg-lifemate-purple/20 text-lifemate-purple mb-3 inline-block transition-all duration-300;
   }
 
   .module-title {
-    @apply text-lg font-semibold mb-2;
+    @apply text-lg font-semibold mb-2 font-poppins;
   }
 
   .module-description {
@@ -93,7 +103,7 @@
   }
   
   .glass-card {
-    @apply backdrop-blur-md bg-secondary/60 border border-border/40 shadow-lg rounded-xl transition-all;
+    @apply backdrop-blur-lg bg-secondary/60 border border-border/40 shadow-glass rounded-xl transition-all;
   }
   
   .auth-container {
@@ -118,5 +128,21 @@
   
   .auth-card.dark {
     @apply bg-secondary/60 border-border/40;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-lifemate-purple to-lifemate-purple-dark text-transparent bg-clip-text;
+  }
+
+  .gradient-border {
+    @apply relative before:absolute before:inset-0 before:p-[2px] before:bg-gradient-to-r before:from-lifemate-purple before:to-lifemate-purple-dark before:rounded-xl before:-z-10;
+  }
+  
+  .animated-bg {
+    @apply relative overflow-hidden;
+  }
+  
+  .animated-bg::before {
+    @apply content-[''] absolute inset-0 bg-gradient-to-br opacity-30 animate-pulse-slow;
   }
 }
