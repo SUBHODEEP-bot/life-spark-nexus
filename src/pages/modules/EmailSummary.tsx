@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Mail, Check, RefreshCw, Play, Pause, Volume2, ArrowRight, Star, Trash, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,13 +19,15 @@ interface Email {
   folder: "inbox" | "important" | "archived";
 }
 
+type FolderType = "inbox" | "important" | "archived";
+
 const EmailSummary = () => {
   const [loading, setLoading] = useState(true);
   const [emails, setEmails] = useState<Email[]>([]);
   const [playingEmailId, setPlayingEmailId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredEmails, setFilteredEmails] = useState<Email[]>([]);
-  const [activeTab, setActiveTab] = useState<"inbox" | "important" | "archived">("inbox");
+  const [activeTab, setActiveTab] = useState<FolderType>("inbox");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,16 +104,14 @@ const EmailSummary = () => {
   useEffect(() => {
     // Filter emails based on search query and active tab
     if (searchQuery.trim() === "") {
-      setFilteredEmails(emails.filter(email => 
-        activeTab === "all" || email.folder === activeTab
-      ));
+      setFilteredEmails(emails.filter(email => email.folder === activeTab));
     } else {
       const filtered = emails.filter(
         email =>
           (email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
           email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
           email.preview.toLowerCase().includes(searchQuery.toLowerCase())) &&
-          (activeTab === "all" || email.folder === activeTab)
+          email.folder === activeTab
       );
       setFilteredEmails(filtered);
     }
@@ -248,7 +249,7 @@ const EmailSummary = () => {
             </Button>
           </div>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs defaultValue={activeTab} onValueChange={(value: FolderType) => setActiveTab(value)} className="w-full">
             <TabsList className="grid grid-cols-3">
               <TabsTrigger value="inbox">Inbox</TabsTrigger>
               <TabsTrigger value="important">Important</TabsTrigger>
@@ -333,7 +334,7 @@ const EmailSummary = () => {
       );
     }
     
-    const emailsToShow = filteredEmails.filter(email => activeTab === "all" || email.folder === activeTab);
+    const emailsToShow = filteredEmails;
     
     if (emailsToShow.length === 0) {
       return (
