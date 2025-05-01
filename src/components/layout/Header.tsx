@@ -1,5 +1,5 @@
 
-import { Bell, Menu, Moon, Search, Settings, Sun, User, HelpCircle, Languages } from "lucide-react";
+import { Bell, Menu, Moon, Search, Settings, Sun, User, HelpCircle, Languages, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {

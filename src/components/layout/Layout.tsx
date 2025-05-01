@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { Loader } from "lucide-react";
+import { Loader, HelpCircle } from "lucide-react";
 
 const Layout = () => {
   const { isAuthenticated, isLoading } = useAuth();
