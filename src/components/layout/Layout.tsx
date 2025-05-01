@@ -1,14 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { Loader, HelpCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Layout = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [pageTransition, setPageTransition] = useState(false);
@@ -31,6 +34,14 @@ const Layout = () => {
     const timer = setTimeout(() => setPageTransition(false), 300);
     return () => clearTimeout(timer);
   }, [location.pathname]);
+
+  const handleHelpClick = () => {
+    toast({
+      title: "AI Assistant",
+      description: "How can I help you today?",
+      duration: 3000,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -61,6 +72,7 @@ const Layout = () => {
         <button 
           className="bg-lifemate-purple text-white p-4 rounded-full shadow-glow hover:shadow-neon transition-all duration-300 hover:scale-110"
           aria-label="Get assistance"
+          onClick={handleHelpClick}
         >
           <HelpCircle className="h-6 w-6" />
         </button>

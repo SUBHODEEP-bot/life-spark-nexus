@@ -1,7 +1,10 @@
 
+import { useState } from "react";
 import { Bell, Menu, Moon, Search, Settings, Sun, User, HelpCircle, Languages, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -21,6 +24,9 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
   const { user, logout, theme, toggleTheme } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Prevent hydration mismatch by only showing theme elements after mount
   useEffect(() => {
@@ -33,6 +39,46 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleNotificationClick = () => {
+    toast({
+      title: "Notifications",
+      description: "You have 3 unread notifications",
+      duration: 3000,
+    });
+  };
+
+  const handleProfileClick = () => {
+    toast({
+      title: "Profile",
+      description: "Profile page coming soon",
+      duration: 3000,
+    });
+  };
+
+  const handleSettingsClick = () => {
+    toast({
+      title: "Settings",
+      description: "Settings page coming soon",
+      duration: 3000,
+    });
+  };
+
+  const handleLanguageClick = () => {
+    toast({
+      title: "Language",
+      description: "Language settings coming soon",
+      duration: 3000,
+    });
+  };
+
+  const handleHelpCenterClick = () => {
+    toast({
+      title: "Help Center",
+      description: "Help center coming soon",
+      duration: 3000,
+    });
+  };
 
   return (
     <header 
@@ -89,6 +135,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
             variant="ghost" 
             size="icon"
             className="rounded-full hover:bg-lifemate-purple/10 relative"
+            onClick={handleNotificationClick}
           >
             <Bell className="h-5 w-5" />
             <span className="absolute top-0 right-0 w-2 h-2 bg-lifemate-orange rounded-full"></span>
@@ -121,16 +168,16 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
                 </div>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+              <DropdownMenuItem onClick={handleProfileClick} className="flex items-center gap-2 cursor-pointer">
                 <User className="h-4 w-4" /> Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+              <DropdownMenuItem onClick={handleSettingsClick} className="flex items-center gap-2 cursor-pointer">
                 <Settings className="h-4 w-4" /> Settings
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+              <DropdownMenuItem onClick={handleLanguageClick} className="flex items-center gap-2 cursor-pointer">
                 <Languages className="h-4 w-4" /> Language
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+              <DropdownMenuItem onClick={handleHelpCenterClick} className="flex items-center gap-2 cursor-pointer">
                 <HelpCircle className="h-4 w-4" /> Help Center
               </DropdownMenuItem>
               <DropdownMenuSeparator />
