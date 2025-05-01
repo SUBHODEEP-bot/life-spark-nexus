@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 const Layout = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, theme } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -90,6 +90,10 @@ const Layout = () => {
         response: "The Email Summary module provides audio summaries of your important emails, so you can listen to your emails instead of reading them."
       },
       {
+        keywords: ["theme", "dark", "light", "mode", "color"],
+        response: "You can change the theme by clicking the theme toggle button in the top-right corner of the app. LifeMate X supports Light, Dark, and System themes."
+      },
+      {
         keywords: ["thanks", "thank you", "appreciate"],
         response: "You're welcome! I'm happy I could help. Feel free to ask if you need anything else!"
       }
@@ -115,7 +119,7 @@ const Layout = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-lifemate-dark to-black">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader className="animate-spin h-12 w-12 text-lifemate-purple" />
           <p className="text-lifemate-purple font-medium animate-pulse">Loading LifeMate X...</p>
@@ -125,7 +129,7 @@ const Layout = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-secondary/30">
+    <div className={`min-h-screen flex flex-col bg-background transition-colors duration-300`}>
       <Header toggleSidebar={toggleSidebar} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
@@ -150,7 +154,7 @@ const Layout = () => {
       
       {/* AI Assistant Dialog */}
       <Dialog open={showAssistantDialog} onOpenChange={setShowAssistantDialog}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-hidden flex flex-col dropdown-content">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-lifemate-purple" />
@@ -196,7 +200,7 @@ const Layout = () => {
               value={userQuery}
               onChange={(e) => setUserQuery(e.target.value)}
               placeholder="Type your question here..."
-              className="flex-1 p-2 rounded-md border focus:outline-none focus:ring-1 focus:ring-lifemate-purple"
+              className="flex-1 p-2 rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-lifemate-purple"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

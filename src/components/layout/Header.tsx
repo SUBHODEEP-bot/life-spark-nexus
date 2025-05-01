@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Bell, Menu, Moon, Search, Settings, Sun, User, HelpCircle, Languages, Shield } from "lucide-react";
+import { Bell, Menu, Moon, Search, Settings, Sun, User, HelpCircle, Languages, Shield, Laptop } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -34,7 +34,7 @@ interface HeaderProps {
 }
 
 const Header = ({ toggleSidebar }: HeaderProps) => {
-  const { user, logout, theme, toggleTheme } = useAuth();
+  const { user, logout, theme, setTheme, toggleTheme } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -42,6 +42,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -120,9 +121,31 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
     setShowHelpDialog(true);
   };
 
+  // Theme toggle handlers
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    setShowThemeMenu(false);
+    toast({
+      title: `${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} Theme`,
+      description: `Switched to ${newTheme} theme`,
+      duration: 2000,
+    });
+  };
+
+  const getThemeIcon = () => {
+    if (!mounted) return null;
+    
+    switch (theme) {
+      case 'light': return <Sun className="h-5 w-5" />;
+      case 'dark': return <Moon className="h-5 w-5" />;
+      case 'system': return <Laptop className="h-5 w-5" />;
+      default: return <Sun className="h-5 w-5" />;
+    }
+  };
+
   // Notification popover content
   const notificationContent = (
-    <PopoverContent className="w-80 p-0 max-h-96 overflow-auto">
+    <PopoverContent className="w-80 p-0 max-h-96 overflow-auto dropdown-content">
       <div className="p-4 border-b flex justify-between items-center">
         <h3 className="font-semibold">Notifications</h3>
         <Button variant="ghost" size="sm" onClick={markAllAsRead}>Mark all read</Button>
@@ -165,7 +188,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
   return (
     <header 
       className={`sticky top-0 z-30 backdrop-blur-md border-b transition-all duration-300
-        ${scrolled ? 'bg-secondary/80 shadow-md' : 'bg-transparent border-transparent'}`}
+        ${scrolled ? 'bg-card/80 shadow-md' : 'bg-transparent border-transparent'}`}
     >
       <div className="container max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -192,25 +215,49 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
           <input
             type="text"
             placeholder="Search LifeMate X..."
-            className="w-full bg-background/50 rounded-full py-2 pl-10 pr-4 text-sm border border-border/40 focus:outline-none focus:ring-1 focus:ring-lifemate-purple transition-all"
+            className="w-full bg-secondary/50 rounded-full py-2 pl-10 pr-4 text-sm border border-border/40 focus:outline-none focus:ring-1 focus:ring-lifemate-purple transition-all"
           />
         </div>
 
         <div className="flex items-center gap-3">
           {mounted && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleTheme} 
-              className="rounded-full hover:bg-lifemate-purple/10"
-              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
+            <Popover open={showThemeMenu} onOpenChange={setShowThemeMenu}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={`rounded-full hover:bg-lifemate-purple/10 theme-toggle-btn ${showThemeMenu ? 'active' : ''}`}
+                  aria-label="Toggle theme"
+                >
+                  {getThemeIcon()}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-1 w-40 dropdown-content">
+                <div className="space-y-1">
+                  <Button 
+                    variant={theme === 'light' ? 'default' : 'ghost'} 
+                    className="w-full justify-start" 
+                    onClick={() => handleThemeChange('light')}
+                  >
+                    <Sun className="h-4 w-4 mr-2" /> Light
+                  </Button>
+                  <Button 
+                    variant={theme === 'dark' ? 'default' : 'ghost'} 
+                    className="w-full justify-start" 
+                    onClick={() => handleThemeChange('dark')}
+                  >
+                    <Moon className="h-4 w-4 mr-2" /> Dark
+                  </Button>
+                  <Button 
+                    variant={theme === 'system' ? 'default' : 'ghost'} 
+                    className="w-full justify-start" 
+                    onClick={() => handleThemeChange('system')}
+                  >
+                    <Laptop className="h-4 w-4 mr-2" /> System
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
           
           <Popover open={showNotifications} onOpenChange={setShowNotifications}>
@@ -248,7 +295,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 backdrop-blur-md bg-card/90 border-border/40">
+            <DropdownMenuContent align="end" className="w-64 dropdown-content">
               <div className="p-2 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-gradient-to-br from-lifemate-purple to-lifemate-purple-dark flex items-center justify-center text-white font-medium shadow-md">
                   {user?.name?.charAt(0) || 'U'}
@@ -282,7 +329,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
       
       {/* Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dropdown-content">
           <DialogHeader>
             <DialogTitle>Your Profile</DialogTitle>
             <DialogDescription>
@@ -332,7 +379,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
       
       {/* Settings Dialog */}
       <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dropdown-content">
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
             <DialogDescription>
@@ -342,10 +389,32 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
           <div className="py-4 space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-medium">Dark Mode</h3>
-                <p className="text-sm text-muted-foreground">Switch between light and dark theme</p>
+                <h3 className="font-medium">Theme</h3>
+                <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
               </div>
-              <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+              <div className="flex space-x-2">
+                <Button 
+                  size="sm" 
+                  variant={theme === 'light' ? 'default' : 'outline'}
+                  onClick={() => setTheme('light')}
+                >
+                  <Sun className="h-4 w-4 mr-2" /> Light
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={theme === 'dark' ? 'default' : 'outline'}
+                  onClick={() => setTheme('dark')}
+                >
+                  <Moon className="h-4 w-4 mr-2" /> Dark
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={theme === 'system' ? 'default' : 'outline'}
+                  onClick={() => setTheme('system')}
+                >
+                  <Laptop className="h-4 w-4 mr-2" /> System
+                </Button>
+              </div>
             </div>
             
             <div className="flex justify-between items-center">
@@ -394,7 +463,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
       
       {/* Language Dialog */}
       <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dropdown-content">
           <DialogHeader>
             <DialogTitle>Language Settings</DialogTitle>
             <DialogDescription>
@@ -432,7 +501,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
       
       {/* Help Center Dialog */}
       <Dialog open={showHelpDialog} onOpenChange={setShowHelpDialog}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto dropdown-content">
           <DialogHeader>
             <DialogTitle>Help Center</DialogTitle>
             <DialogDescription>

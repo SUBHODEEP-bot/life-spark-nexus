@@ -163,7 +163,7 @@ const Sidebar = ({ isOpen, closeSidebar }: SidebarProps) => {
       
       <aside 
         className={cn(
-          "fixed inset-y-0 left-0 z-50 bg-secondary/95 backdrop-blur-sm w-64 transform transition-transform duration-200 ease-in-out border-r border-border/40 flex flex-col",
+          "fixed inset-y-0 left-0 z-50 bg-card/95 backdrop-blur-sm w-64 transform transition-transform duration-200 ease-in-out border-r border-border/40 flex flex-col",
           isOpen ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0 lg:static lg:z-0"
         )}
@@ -209,7 +209,7 @@ const Sidebar = ({ isOpen, closeSidebar }: SidebarProps) => {
         </ScrollArea>
         
         <div className="p-4 border-t border-border/40">
-          <div className="bg-secondary rounded-lg p-3">
+          <div className="bg-secondary/50 rounded-lg p-3">
             <p className="text-xs text-muted-foreground">
               LifeMate X Version 1.0
             </p>

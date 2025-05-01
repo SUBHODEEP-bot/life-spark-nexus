@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -197,7 +198,7 @@ const modulesList: Module[] = [
 ];
 
 const Dashboard = () => {
-  const { user, theme } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState("");
   const [currentTime, setCurrentTime] = useState("");
@@ -249,7 +250,7 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold font-poppins">
               {greeting}, <span className="gradient-text">{user?.name || 'User'}</span>
             </h1>
-            <p className="text-gray-50 flex items-center gap-2 mt-1">
+            <p className="text-muted-foreground flex items-center gap-2 mt-1">
               <Calendar className="h-4 w-4 text-lifemate-purple" />
               {new Date().toLocaleDateString(undefined, {
                 weekday: 'long',
