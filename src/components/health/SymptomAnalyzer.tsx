@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Stethoscope, AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { generateGeminiResponse } from "@/utils/aiHelpers";
+import { toast } from "@/hooks/use-toast";
 
 const SymptomAnalyzer = () => {
   const [symptoms, setSymptoms] = useState("");
@@ -33,17 +34,33 @@ const SymptomAnalyzer = () => {
     `;
 
     try {
+      console.log("Analyzing symptoms:", symptoms);
       const response = await generateGeminiResponse(prompt);
       
       if (response.error) {
         console.error("Gemini API error:", response.error);
         setError("Sorry, I couldn't analyze your symptoms. Please try again later.");
+        toast({
+          title: "Analysis Error",
+          description: "Could not analyze symptoms at this time.",
+          variant: "destructive"
+        });
       } else {
+        console.log("Analysis received successfully");
         setAnalysis(response.text);
+        toast({
+          title: "Analysis Complete",
+          description: "Your symptoms have been analyzed.",
+        });
       }
     } catch (err) {
       console.error("Error analyzing symptoms:", err);
       setError("An error occurred while analyzing your symptoms. Please try again.");
+      toast({
+        title: "Analysis Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      });
     } finally {
       setIsAnalyzing(false);
     }

@@ -78,4 +78,3 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
 
 // Make OpenAI function use Gemini for backward compatibility
 export const generateOpenAIResponse = generateGeminiResponse;
-
