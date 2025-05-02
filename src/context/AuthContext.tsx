@@ -13,8 +13,11 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
+  verifyOTP: (otp: string) => Promise<boolean>;
+  resendOTP: () => Promise<boolean>;
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
   toggleTheme: () => void;
@@ -115,7 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       // Simulate API call
@@ -127,8 +130,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         name: 'Jane Doe',
         email: email
       });
+      
+      return true;
     } catch (error) {
-      throw new Error('Invalid credentials');
+      console.error('Login error:', error);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -136,6 +142,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     setUser(null);
+  };
+  
+  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Registration successful:', { name, email });
+      // Don't set the user yet, as we want them to verify the OTP first
+      
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const verifyOTP = async (otp: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For development, log the OTP to console
+      console.log('[Development] Verifying OTP:', otp);
+      
+      // Mock verification - in a real app, this would validate with a backend
+      const isValid = otp.length === 6;
+      
+      // If valid, set the user
+      if (isValid) {
+        setUser({
+          id: '2', // Different ID to distinguish from login
+          name: 'New User',
+          email: 'new.user@example.com'
+        });
+      }
+      
+      return isValid;
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const resendOTP = async (): Promise<boolean> => {
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For development, generate and log a new OTP to console
+      const newOTP = Math.floor(100000 + Math.random() * 900000).toString();
+      console.log('[Development] New OTP generated:', newOTP);
+      
+      return true;
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      return false;
+    }
   };
 
   return (
@@ -146,6 +216,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         login,
         logout,
+        register,
+        verifyOTP,
+        resendOTP,
         theme,
         setTheme,
         toggleTheme
