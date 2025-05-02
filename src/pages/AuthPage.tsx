@@ -56,6 +56,7 @@ const AuthPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
   const [isResending, setIsResending] = useState(false);
+  const [authError, setAuthError] = useState("");
   const otpInputRef = useRef<HTMLInputElement>(null);
   
   const from = (location.state as { from?: string })?.from || "/dashboard";
@@ -105,35 +106,79 @@ const AuthPage = () => {
   });
 
   const onLoginSubmit = async (values: LoginFormValues) => {
-    const success = await login(values.email, values.password);
-    if (success) {
+    setAuthError("");
+    const response = await login(values.email, values.password);
+    
+    if (response.success) {
       toast({
         title: "Login successful",
         description: "Welcome back to LifeMate X!",
       });
       navigate(from);
+    } else {
+      // Check if user needs to verify email
+      if (response.message.includes("not verified")) {
+        setShowOTP(true);
+        setOtpTimer(60);
+        toast({
+          title: "Email verification required",
+          description: "Please verify your email to continue",
+        });
+      } else {
+        // Display error message
+        setAuthError(response.message);
+        toast({
+          title: "Login failed",
+          description: response.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const onRegisterSubmit = async (values: RegisterFormValues) => {
-    const success = await register(values.name, values.email, values.password);
-    if (success) {
+    setAuthError("");
+    const response = await register(values.name, values.email, values.password);
+    
+    if (response.success) {
       setShowOTP(true);
       // Set a 60 seconds timer for OTP resend
       setOtpTimer(60);
       // Show debug info in console
       console.log("[Development] Check console for OTP code");
+      
+      toast({
+        title: "Registration initiated",
+        description: "Please verify your email to complete registration",
+      });
+    } else {
+      setAuthError(response.message);
+      
+      toast({
+        title: "Registration failed",
+        description: response.message,
+        variant: "destructive",
+      });
     }
   };
 
   const onOTPSubmit = async (values: OtpFormValues) => {
-    const success = await verifyOTP(values.otp);
-    if (success) {
+    setAuthError("");
+    const response = await verifyOTP(values.otp);
+    
+    if (response.success) {
       toast({
         title: "Verification successful",
         description: "Your account has been verified successfully!",
       });
       navigate(from);
+    } else {
+      setAuthError(response.message);
+      toast({
+        title: "Verification failed",
+        description: response.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -149,6 +194,12 @@ const AuthPage = () => {
         toast({
           title: "Verification code resent",
           description: "Please check your email for the new code",
+        });
+      } else {
+        toast({
+          title: "Failed to resend code",
+          description: "Please try again later",
+          variant: "destructive",
         });
       }
     } finally {
@@ -193,6 +244,12 @@ const AuthPage = () => {
           </div>
 
           <div className={`auth-card ${theme}`}>
+            {authError && (
+              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md text-sm text-destructive">
+                {authError}
+              </div>
+            )}
+            
             {!showOTP ? (
               <Tabs defaultValue="login" onValueChange={(value) => setIsRegistering(value === "register")}>
                 <TabsList className="grid grid-cols-2 mb-6">

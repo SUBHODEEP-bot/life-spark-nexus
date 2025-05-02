@@ -5,6 +5,16 @@ interface User {
   id: string;
   name: string;
   email: string;
+  verified: boolean;
+}
+
+// Registered user for auth simulation
+interface RegisteredUser {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  verified: boolean;
 }
 
 type ThemeType = 'light' | 'dark' | 'system';
@@ -13,10 +23,10 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{success: boolean; message: string}>;
   logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
-  verifyOTP: (otp: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<{success: boolean; message: string}>;
+  verifyOTP: (otp: string) => Promise<{success: boolean; message: string}>;
   resendOTP: () => Promise<boolean>;
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
@@ -37,6 +47,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [theme, setTheme] = useState<ThemeType>('system');
+  
+  // User registration state
+  const [pendingRegistration, setPendingRegistration] = useState<RegisteredUser | null>(null);
+  
+  // Mock registered users database (simulated with localStorage)
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
+  
+  // Get registered users from localStorage on initial load
+  useEffect(() => {
+    try {
+      const storedUsers = localStorage.getItem('registeredUsers');
+      if (storedUsers) {
+        setRegisteredUsers(JSON.parse(storedUsers));
+      }
+    } catch (error) {
+      console.error('Error loading registered users:', error);
+    }
+  }, []);
+  
+  // Save registered users to localStorage when changed
+  useEffect(() => {
+    if (registeredUsers.length > 0) {
+      localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+    }
+  }, [registeredUsers]);
 
   // Set theme from localStorage or default to system
   useEffect(() => {
@@ -90,12 +125,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Mock authenticated user
-        setUser({
-          id: '1',
-          name: 'Jane Doe',
-          email: 'jane.doe@example.com'
-        });
+        // Check if there's a user session in localStorage
+        const storedSession = localStorage.getItem('userSession');
+        if (storedSession) {
+          const parsedSession = JSON.parse(storedSession);
+          
+          // Validate if the stored user exists in registered users
+          const userExists = registeredUsers.find(
+            u => u.email === parsedSession.email && u.verified
+          );
+          
+          if (userExists) {
+            setUser({
+              id: userExists.id,
+              name: userExists.name,
+              email: userExists.email,
+              verified: userExists.verified
+            });
+          } else {
+            // Clear invalid session
+            localStorage.removeItem('userSession');
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
         
         setIsLoading(false);
       } catch (error) {
@@ -105,7 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
     
     checkAuth();
-  }, []);
+  }, [registeredUsers]);
 
   const toggleTheme = () => {
     setTheme(prevTheme => {
@@ -118,23 +172,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{success: boolean; message: string}> => {
     setIsLoading(true);
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Success - set user
-      setUser({
-        id: '1',
-        name: 'Jane Doe',
-        email: email
-      });
+      // Find user in registered users
+      const foundUser = registeredUsers.find(user => user.email === email);
       
-      return true;
+      if (!foundUser) {
+        return { success: false, message: "User not found. Please register first." };
+      }
+      
+      if (!foundUser.verified) {
+        // Set as pending registration to allow OTP verification
+        setPendingRegistration(foundUser);
+        return { success: false, message: "Email not verified. Please verify your email first." };
+      }
+      
+      // Check password
+      if (foundUser.password !== password) {
+        return { success: false, message: "Incorrect password." };
+      }
+      
+      // Success - set user
+      const loggedInUser = {
+        id: foundUser.id,
+        name: foundUser.name,
+        email: foundUser.email,
+        verified: true
+      };
+      
+      setUser(loggedInUser);
+      
+      // Save session to localStorage
+      localStorage.setItem('userSession', JSON.stringify({
+        email: foundUser.email,
+        timestamp: new Date().getTime()
+      }));
+      
+      return { success: true, message: "Login successful." };
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return { success: false, message: "An error occurred during login. Please try again." };
     } finally {
       setIsLoading(false);
     }
@@ -142,27 +223,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('userSession');
   };
   
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+  const register = async (name: string, email: string, password: string): Promise<{success: boolean; message: string}> => {
     setIsLoading(true);
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log('Registration successful:', { name, email });
-      // Don't set the user yet, as we want them to verify the OTP first
+      // Check if user already exists
+      const userExists = registeredUsers.find(user => user.email === email);
       
-      return true;
+      if (userExists) {
+        if (userExists.verified) {
+          return { success: false, message: "Email already registered. Please login instead." };
+        } else {
+          // User exists but not verified
+          setPendingRegistration(userExists);
+          return { success: true, message: "Please complete email verification." };
+        }
+      }
+      
+      // Create new unverified user
+      const newUser: RegisteredUser = {
+        id: `user-${Date.now()}`,
+        name,
+        email,
+        password,
+        verified: false
+      };
+      
+      // Store as pending registration
+      setPendingRegistration(newUser);
+      
+      // Add to registered users (but not verified yet)
+      setRegisteredUsers(prev => [...prev, newUser]);
+      
+      return { success: true, message: "Registration initiated. Please verify your email." };
     } catch (error) {
       console.error('Registration error:', error);
-      return false;
+      return { success: false, message: "An error occurred during registration. Please try again." };
     } finally {
       setIsLoading(false);
     }
   };
   
-  const verifyOTP = async (otp: string): Promise<boolean> => {
+  const verifyOTP = async (otp: string): Promise<{success: boolean; message: string}> => {
     setIsLoading(true);
     try {
       // Simulate API call
@@ -171,22 +278,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // For development, log the OTP to console
       console.log('[Development] Verifying OTP:', otp);
       
+      if (!pendingRegistration) {
+        return { success: false, message: "No pending registration found." };
+      }
+      
       // Mock verification - in a real app, this would validate with a backend
       const isValid = otp.length === 6;
       
-      // If valid, set the user
-      if (isValid) {
-        setUser({
-          id: '2', // Different ID to distinguish from login
-          name: 'New User',
-          email: 'new.user@example.com'
-        });
+      if (!isValid) {
+        return { success: false, message: "Invalid verification code." };
       }
       
-      return isValid;
+      // Mark user as verified
+      const updatedUsers = registeredUsers.map(user => 
+        user.email === pendingRegistration.email 
+          ? { ...user, verified: true } 
+          : user
+      );
+      
+      setRegisteredUsers(updatedUsers);
+      
+      // Set the user as logged in
+      const verifiedUser = {
+        id: pendingRegistration.id,
+        name: pendingRegistration.name,
+        email: pendingRegistration.email,
+        verified: true
+      };
+      
+      setUser(verifiedUser);
+      
+      // Save session to localStorage
+      localStorage.setItem('userSession', JSON.stringify({
+        email: pendingRegistration.email,
+        timestamp: new Date().getTime()
+      }));
+      
+      // Clear pending registration
+      setPendingRegistration(null);
+      
+      return { success: true, message: "Email verified successfully." };
     } catch (error) {
       console.error('OTP verification error:', error);
-      return false;
+      return { success: false, message: "An error occurred during verification. Please try again." };
     } finally {
       setIsLoading(false);
     }
@@ -197,9 +331,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      if (!pendingRegistration) {
+        return false;
+      }
+      
       // For development, generate and log a new OTP to console
       const newOTP = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log('[Development] New OTP generated:', newOTP);
+      console.log('[Development] New OTP generated for', pendingRegistration.email, ':', newOTP);
       
       return true;
     } catch (error) {
