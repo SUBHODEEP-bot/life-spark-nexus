@@ -1,4 +1,4 @@
-
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,45 +35,52 @@ import PrivacyGuardian from "./pages/modules/PrivacyGuardian";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route element={<Layout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/daily-planner" element={<DailyPlanner />} />
-              <Route path="/health-assistant" element={<HealthAssistant />} />
-              <Route path="/yoga" element={<YogaModule />} />
-              <Route path="/email-summary" element={<EmailSummary />} />
-              <Route path="/daily-motivation" element={<DailyMotivation />} />
-              <Route path="/finance-tracker" element={<FinanceTracker />} />
-              <Route path="/problem-solver" element={<ProblemSolver />} />
-              <Route path="/task-reminder" element={<TaskReminder />} />
-              <Route path="/app-integration" element={<AppIntegration />} />
-              <Route path="/chat-companion" element={<ChatCompanion />} />
-              <Route path="/life-scheduler" element={<LifeScheduler />} />
-              <Route path="/news-digest" element={<NewsDigest />} />
-              <Route path="/career-coach" element={<CareerCoach />} />
-              <Route path="/family-sync" element={<FamilySync />} />
-              <Route path="/life-analyzer" element={<LifeAnalyzer />} />
-              <Route path="/wish-grant-system" element={<WishGrantSystem />} />
-              <Route path="/emergency-alert" element={<EmergencyAlert />} />
-              <Route path="/celebration-tracker" element={<CelebrationTracker />} />
-              <Route path="/voice-translator" element={<VoiceTranslator />} />
-              <Route path="/privacy-guardian" element={<PrivacyGuardian />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Debug log to track app rendering and persistent login
+  useEffect(() => {
+    console.log('🚀 App mounted, auth checking will begin shortly');
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route element={<Layout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/daily-planner" element={<DailyPlanner />} />
+                <Route path="/health-assistant" element={<HealthAssistant />} />
+                <Route path="/yoga" element={<YogaModule />} />
+                <Route path="/email-summary" element={<EmailSummary />} />
+                <Route path="/daily-motivation" element={<DailyMotivation />} />
+                <Route path="/finance-tracker" element={<FinanceTracker />} />
+                <Route path="/problem-solver" element={<ProblemSolver />} />
+                <Route path="/task-reminder" element={<TaskReminder />} />
+                <Route path="/app-integration" element={<AppIntegration />} />
+                <Route path="/chat-companion" element={<ChatCompanion />} />
+                <Route path="/life-scheduler" element={<LifeScheduler />} />
+                <Route path="/news-digest" element={<NewsDigest />} />
+                <Route path="/career-coach" element={<CareerCoach />} />
+                <Route path="/family-sync" element={<FamilySync />} />
+                <Route path="/life-analyzer" element={<LifeAnalyzer />} />
+                <Route path="/wish-grant-system" element={<WishGrantSystem />} />
+                <Route path="/emergency-alert" element={<EmergencyAlert />} />
+                <Route path="/celebration-tracker" element={<CelebrationTracker />} />
+                <Route path="/voice-translator" element={<VoiceTranslator />} />
+                <Route path="/privacy-guardian" element={<PrivacyGuardian />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

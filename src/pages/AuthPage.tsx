@@ -107,9 +107,11 @@ const AuthPage = () => {
 
   const onLoginSubmit = async (values: LoginFormValues) => {
     setAuthError("");
+    console.log("📝 Login form submitted for:", values.email);
     const response = await login(values.email, values.password);
     
     if (response.success) {
+      console.log("✅ Login successful, navigating to:", from);
       toast({
         title: "Login successful",
         description: "Welcome back to LifeMate X!",
