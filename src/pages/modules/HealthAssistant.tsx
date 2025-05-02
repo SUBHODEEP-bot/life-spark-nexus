@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Pill, Clock, Calendar, User, PlusCircle, Activity, X, Heart, Stethoscope } from "lucide-react";
@@ -14,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import SymptomAnalyzer from "@/components/health/SymptomAnalyzer";
 
 // Type definitions
 interface Medication {
@@ -468,22 +468,13 @@ const HealthAssistant = () => {
                     )}
                   </div>
                   
-                  <Button className="w-full">Start Symptom Check</Button>
-                  
-                  <div className="rounded-md border border-border p-3 mt-4">
-                    <div className="flex items-center gap-2">
-                      <Stethoscope className="h-5 w-5 text-lifemate-purple" />
-                      <span className="font-medium">AI Symptom Analysis</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Based on your reported headache symptom, this could be related to 
-                      dehydration, stress, or eye strain. Consider increasing water intake 
-                      and taking short breaks from screens.
-                    </p>
-                  </div>
+                  <Button className="w-full">Report New Symptom</Button>
                 </CardContent>
               </Card>
             </div>
+
+            {/* New Symptom Analyzer Component */}
+            <SymptomAnalyzer />
 
             <Card className="border-lifemate-purple/30">
               <CardHeader>
