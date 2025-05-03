@@ -1,4 +1,6 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
+import { sendOTPEmail } from '../services/emailService';
 
 interface User {
   id: string;
@@ -14,6 +16,15 @@ interface RegisteredUser {
   email: string;
   password: string;
   verified: boolean;
+}
+
+// OTP data structure
+interface OTPData {
+  otp: string;
+  email: string;
+  timestamp: number;
+  expiryMinutes: number;
+  userId: string;
 }
 
 type ThemeType = 'light' | 'dark' | 'system';
@@ -50,6 +61,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   // User registration state
   const [pendingRegistration, setPendingRegistration] = useState<RegisteredUser | null>(null);
+  
+  // OTP verification state
+  const [otpData, setOtpData] = useState<OTPData | null>(null);
   
   // Mock registered users database (simulated with localStorage)
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
@@ -202,6 +216,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
+  // Generate a secure 6-digit OTP
+  const generateOTP = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const login = async (email: string, password: string): Promise<{success: boolean; message: string}> => {
     console.log('🔑 Login attempt:', email);
     setIsLoading(true);
@@ -221,6 +240,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Set as pending registration to allow OTP verification
         console.log('⚠️ User found but not verified, setting as pending registration');
         setPendingRegistration(foundUser);
+        
+        // Generate and send a new OTP for verification
+        const newOTP = generateOTP();
+        const otpExpiry = 5; // 5 minutes expiry
+        
+        // Store OTP data in memory
+        setOtpData({
+          otp: newOTP,
+          email: foundUser.email,
+          timestamp: Date.now(),
+          expiryMinutes: otpExpiry,
+          userId: foundUser.id
+        });
+        
+        // Send OTP email
+        await sendOTPEmail({
+          email: foundUser.email,
+          otp: newOTP,
+          expiryTime: `${otpExpiry} minutes`
+        });
+        
         return { success: false, message: "Email not verified. Please verify your email first." };
       }
       
@@ -280,20 +320,74 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (userExists.verified) {
           return { success: false, message: "Email already registered. Please login instead." };
         } else {
-          // User exists but not verified
+          // User exists but not verified - generate a new OTP
+          const newOTP = generateOTP();
+          const otpExpiry = 5; // 5 minutes expiry
+          
+          // Store OTP data
+          setOtpData({
+            otp: newOTP,
+            email: userExists.email,
+            timestamp: Date.now(),
+            expiryMinutes: otpExpiry,
+            userId: userExists.id
+          });
+          
+          // Send OTP email
+          const emailResult = await sendOTPEmail({
+            email: userExists.email,
+            otp: newOTP,
+            expiryTime: `${otpExpiry} minutes`
+          });
+          
+          if (!emailResult.success) {
+            return { success: false, message: "Failed to send verification email. Please try again." };
+          }
+          
+          // Store as pending registration
           setPendingRegistration(userExists);
-          return { success: true, message: "Please complete email verification." };
+          
+          console.log(`🔐 New OTP generated for existing unverified user: ${newOTP}`);
+          
+          return { success: true, message: "Please check your email and verify your account to complete registration." };
         }
       }
       
       // Create new unverified user
+      const newUserId = `user-${Date.now()}`;
       const newUser: RegisteredUser = {
-        id: `user-${Date.now()}`,
+        id: newUserId,
         name,
         email,
         password,
         verified: false
       };
+      
+      // Generate OTP for verification
+      const newOTP = generateOTP();
+      const otpExpiry = 5; // 5 minutes expiry
+      
+      // Store OTP data
+      setOtpData({
+        otp: newOTP,
+        email: email,
+        timestamp: Date.now(),
+        expiryMinutes: otpExpiry,
+        userId: newUserId
+      });
+      
+      console.log(`🔐 OTP generated: ${newOTP}`);
+      
+      // Send OTP email
+      const emailResult = await sendOTPEmail({
+        email: email,
+        otp: newOTP,
+        expiryTime: `${otpExpiry} minutes`
+      });
+      
+      if (!emailResult.success) {
+        return { success: false, message: "Failed to send verification email. Please try again." };
+      }
       
       // Store as pending registration
       setPendingRegistration(newUser);
@@ -301,7 +395,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Add to registered users (but not verified yet)
       setRegisteredUsers(prev => [...prev, newUser]);
       
-      return { success: true, message: "Registration initiated. Please verify your email." };
+      return { success: true, message: "Please check your email and verify your account to complete registration." };
     } catch (error) {
       console.error('Registration error:', error);
       return { success: false, message: "An error occurred during registration. Please try again." };
@@ -316,18 +410,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For development, log the OTP to console
       console.log('[Development] Verifying OTP:', otp);
       
-      if (!pendingRegistration) {
-        return { success: false, message: "No pending registration found." };
+      if (!pendingRegistration || !otpData) {
+        return { success: false, message: "No pending registration or OTP found." };
       }
       
-      // Mock verification - in a real app, this would validate with a backend
-      const isValid = otp.length === 6;
+      // Check if OTP is valid
+      const isValid = otp === otpData.otp;
       
       if (!isValid) {
         return { success: false, message: "Invalid verification code." };
+      }
+      
+      // Check if OTP is expired (5 minutes)
+      const now = Date.now();
+      const otpAgeInMinutes = (now - otpData.timestamp) / (1000 * 60);
+      
+      if (otpAgeInMinutes > otpData.expiryMinutes) {
+        return { success: false, message: `Verification code expired. It was valid for ${otpData.expiryMinutes} minutes.` };
       }
       
       // Mark user as verified
@@ -352,11 +453,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Save session to localStorage
       localStorage.setItem('userSession', JSON.stringify({
         email: pendingRegistration.email,
+        userId: pendingRegistration.id,
+        verified: true,
         timestamp: new Date().getTime()
       }));
       
-      // Clear pending registration
+      // Clear pending registration and OTP data
       setPendingRegistration(null);
+      setOtpData(null);
       
       return { success: true, message: "Email verified successfully." };
     } catch (error) {
@@ -376,11 +480,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
       
-      // For development, generate and log a new OTP to console
-      const newOTP = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log('[Development] New OTP generated for', pendingRegistration.email, ':', newOTP);
+      // Generate a new OTP
+      const newOTP = generateOTP();
+      const otpExpiry = 5; // 5 minutes expiry
       
-      return true;
+      console.log(`[Development] New OTP generated for ${pendingRegistration.email}: ${newOTP}`);
+      
+      // Update OTP data
+      setOtpData({
+        otp: newOTP,
+        email: pendingRegistration.email,
+        timestamp: Date.now(),
+        expiryMinutes: otpExpiry,
+        userId: pendingRegistration.id
+      });
+      
+      // Send OTP email
+      const emailResult = await sendOTPEmail({
+        email: pendingRegistration.email,
+        otp: newOTP,
+        expiryTime: `${otpExpiry} minutes`
+      });
+      
+      return emailResult.success;
     } catch (error) {
       console.error('Resend OTP error:', error);
       return false;

@@ -49,7 +49,7 @@ type OtpFormValues = z.infer<typeof otpSchema>;
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, verifyOTP, resendOTP, theme, toggleTheme } = useAuth();
+  const { login, register, verifyOTP, resendOTP, theme, toggleTheme, isAuthenticated } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [showOTP, setShowOTP] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -57,9 +57,17 @@ const AuthPage = () => {
   const [otpTimer, setOtpTimer] = useState(0);
   const [isResending, setIsResending] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [registrationEmail, setRegistrationEmail] = useState("");
   const otpInputRef = useRef<HTMLInputElement>(null);
   
   const from = (location.state as { from?: string })?.from || "/dashboard";
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from);
+    }
+  }, [isAuthenticated, navigate, from]);
 
   // OTP resend timer
   useEffect(() => {
@@ -107,7 +115,7 @@ const AuthPage = () => {
 
   const onLoginSubmit = async (values: LoginFormValues) => {
     setAuthError("");
-    console.log("📝 Login form submitted for:", values.email);
+    console.log("📝 Login attempt for:", values.email);
     const response = await login(values.email, values.password);
     
     if (response.success) {
@@ -120,6 +128,7 @@ const AuthPage = () => {
     } else {
       // Check if user needs to verify email
       if (response.message.includes("not verified")) {
+        setRegistrationEmail(values.email);
         setShowOTP(true);
         setOtpTimer(60);
         toast({
@@ -140,6 +149,8 @@ const AuthPage = () => {
 
   const onRegisterSubmit = async (values: RegisterFormValues) => {
     setAuthError("");
+    setRegistrationEmail(values.email); // Store email for OTP screen
+    
     const response = await register(values.name, values.email, values.password);
     
     if (response.success) {
@@ -151,7 +162,7 @@ const AuthPage = () => {
       
       toast({
         title: "Registration initiated",
-        description: "Please verify your email to complete registration",
+        description: "Please check your email for a verification code and enter it to complete registration.",
       });
     } else {
       setAuthError(response.message);
@@ -171,7 +182,7 @@ const AuthPage = () => {
     if (response.success) {
       toast({
         title: "Verification successful",
-        description: "Your account has been verified successfully!",
+        description: "Your account has been verified and you are now logged in!",
       });
       navigate(from);
     } else {
@@ -437,8 +448,8 @@ const AuthPage = () => {
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold">Verify Your Email</h3>
                   <p className="text-muted-foreground mt-2">
-                    We've sent a verification code to your email.
-                    Please enter it below to complete your registration.
+                    We've sent a verification code to <strong>{registrationEmail}</strong>.
+                    <br />Please enter it below to complete your registration.
                   </p>
                 </div>
 
