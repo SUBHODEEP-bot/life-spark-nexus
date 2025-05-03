@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Award, Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,23 +11,20 @@ import PoseLibrary from "@/components/yoga/PoseLibrary";
 import CustomRoutines from "@/components/yoga/CustomRoutines";
 import AIRecommendations from "@/components/yoga/AIRecommendations";
 import YogaExpert from "@/components/yoga/YogaExpert";
-
 const YogaModule = () => {
   // Get yoga data from hook
-  const { 
-    classes, 
-    poses, 
-    streak, 
-    routines, 
+  const {
+    classes,
+    poses,
+    streak,
+    routines,
     recommendations,
     markClassAsCompleted,
     addRoutine,
     deleteRoutine,
     updateRoutine
   } = useYogaData();
-
-  return (
-    <div className="container max-w-5xl mx-auto space-y-8">
+  return <div className="container max-w-5xl mx-auto space-y-8">
       <header>
         <h1 className="text-3xl font-bold text-lifemate-purple">YOUR YOGA</h1>
         <p className="text-muted-foreground">
@@ -46,17 +42,7 @@ const YogaModule = () => {
               </div>
               <div className="text-sm text-muted-foreground mt-1">Day Streak</div>
               <div className="flex gap-1 mt-2">
-                {[...Array(7)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "h-1.5 w-4 rounded-full",
-                      i < streak.currentStreak % 7
-                        ? "bg-lifemate-purple"
-                        : "bg-lifemate-purple/30"
-                    )}
-                  />
-                ))}
+                {[...Array(7)].map((_, i) => <div key={i} className={cn("h-1.5 w-4 rounded-full", i < streak.currentStreak % 7 ? "bg-lifemate-purple" : "bg-lifemate-purple/30")} />)}
               </div>
             </div>
 
@@ -65,10 +51,7 @@ const YogaModule = () => {
                 <Award className="h-5 w-5 text-amber-400" />
                 <span className="text-lg font-medium">Level Progress</span>
               </div>
-              <Progress
-                value={65}
-                className="h-2 w-full max-w-[180px] mt-2 bg-secondary"
-              />
+              <Progress value={65} className="h-2 w-full max-w-[180px] mt-2 bg-secondary" />
               <div className="text-sm text-muted-foreground mt-2">
                 Beginner Level 3
               </div>
@@ -97,18 +80,13 @@ const YogaModule = () => {
           <TabsTrigger value="daily-practice" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Daily Practice</TabsTrigger>
           <TabsTrigger value="pose-library" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Pose Library</TabsTrigger>
           <TabsTrigger value="custom-routines" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Custom Routines</TabsTrigger>
-          <TabsTrigger value="ai-recommendations" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">AI Recommendations</TabsTrigger>
+          
           <TabsTrigger value="yoga-expert" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Yoga Expert</TabsTrigger>
         </TabsList>
 
         {/* Daily Practice Tab */}
         <TabsContent value="daily-practice">
-          <DailyPractice 
-            classes={classes} 
-            poses={poses} 
-            streak={streak} 
-            onMarkCompleted={markClassAsCompleted} 
-          />
+          <DailyPractice classes={classes} poses={poses} streak={streak} onMarkCompleted={markClassAsCompleted} />
         </TabsContent>
 
         {/* Pose Library Tab */}
@@ -118,12 +96,7 @@ const YogaModule = () => {
 
         {/* Custom Routines Tab */}
         <TabsContent value="custom-routines">
-          <CustomRoutines 
-            routines={routines}
-            onAddRoutine={addRoutine}
-            onDeleteRoutine={deleteRoutine}
-            onUpdateRoutine={updateRoutine}
-          />
+          <CustomRoutines routines={routines} onAddRoutine={addRoutine} onDeleteRoutine={deleteRoutine} onUpdateRoutine={updateRoutine} />
         </TabsContent>
 
         {/* AI Recommendations Tab */}
@@ -136,8 +109,6 @@ const YogaModule = () => {
           <YogaExpert />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
-
 export default YogaModule;
