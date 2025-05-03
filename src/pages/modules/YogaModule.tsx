@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Award, Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +11,6 @@ import PoseLibrary from "@/components/yoga/PoseLibrary";
 import CustomRoutines from "@/components/yoga/CustomRoutines";
 import AIRecommendations from "@/components/yoga/AIRecommendations";
 import YogaExpert from "@/components/yoga/YogaExpert";
-
 const YogaModule = () => {
   // Get yoga data from hook
   const {
@@ -26,7 +24,6 @@ const YogaModule = () => {
     deleteRoutine,
     updateRoutine
   } = useYogaData();
-  
   return <div className="container max-w-5xl mx-auto space-y-8">
       <header>
         <h1 className="text-3xl font-bold text-lifemate-purple">YOUR YOGA</h1>
@@ -83,7 +80,7 @@ const YogaModule = () => {
           <TabsTrigger value="daily-practice" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Daily Practice</TabsTrigger>
           <TabsTrigger value="pose-library" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Pose Library</TabsTrigger>
           <TabsTrigger value="custom-routines" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Custom Routines</TabsTrigger>
-          <TabsTrigger value="ai-recommendations" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">AI Recommendations</TabsTrigger>
+          
           <TabsTrigger value="yoga-expert" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Yoga Expert</TabsTrigger>
         </TabsList>
 
@@ -114,5 +111,4 @@ const YogaModule = () => {
       </Tabs>
     </div>;
 };
-
 export default YogaModule;
