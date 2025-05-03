@@ -11,6 +11,7 @@ import DailyPractice from "@/components/yoga/DailyPractice";
 import PoseLibrary from "@/components/yoga/PoseLibrary";
 import CustomRoutines from "@/components/yoga/CustomRoutines";
 import AIRecommendations from "@/components/yoga/AIRecommendations";
+import YogaExpert from "@/components/yoga/YogaExpert";
 
 const YogaModule = () => {
   // Get yoga data from hook
@@ -29,7 +30,7 @@ const YogaModule = () => {
   return (
     <div className="container max-w-5xl mx-auto space-y-8">
       <header>
-        <h1 className="text-3xl font-bold">YOUR YOGA</h1>
+        <h1 className="text-3xl font-bold text-lifemate-purple">YOUR YOGA</h1>
         <p className="text-muted-foreground">
           Daily practice, custom routines, and guided videos
         </p>
@@ -92,11 +93,12 @@ const YogaModule = () => {
       </Card>
 
       <Tabs defaultValue="daily-practice" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="daily-practice">Daily Practice</TabsTrigger>
-          <TabsTrigger value="pose-library">Pose Library</TabsTrigger>
-          <TabsTrigger value="custom-routines">Custom Routines</TabsTrigger>
-          <TabsTrigger value="ai-recommendations">AI Recommendations</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 dark:bg-secondary/80">
+          <TabsTrigger value="daily-practice" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Daily Practice</TabsTrigger>
+          <TabsTrigger value="pose-library" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Pose Library</TabsTrigger>
+          <TabsTrigger value="custom-routines" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Custom Routines</TabsTrigger>
+          <TabsTrigger value="ai-recommendations" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">AI Recommendations</TabsTrigger>
+          <TabsTrigger value="yoga-expert" className="dark:text-white dark:data-[state=active]:bg-lifemate-purple/30 dark:data-[state=active]:text-white">Yoga Expert</TabsTrigger>
         </TabsList>
 
         {/* Daily Practice Tab */}
@@ -127,6 +129,11 @@ const YogaModule = () => {
         {/* AI Recommendations Tab */}
         <TabsContent value="ai-recommendations">
           <AIRecommendations recommendations={recommendations} />
+        </TabsContent>
+        
+        {/* Yoga Expert Tab */}
+        <TabsContent value="yoga-expert">
+          <YogaExpert />
         </TabsContent>
       </Tabs>
     </div>

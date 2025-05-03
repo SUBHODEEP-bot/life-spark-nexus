@@ -64,3 +64,14 @@ export interface YogaRecommendation {
   thumbnail?: string;
   youtubeId?: string;
 }
+
+export interface YogaExpertResponse {
+  issue: string;
+  poses: {
+    name: string;
+    steps: string[];
+    benefits: string[];
+    youtubeSearchTerm?: string;
+  }[];
+  advice: string;
+}

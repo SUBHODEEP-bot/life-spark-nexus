@@ -47,7 +47,9 @@ export const useGeminiYogaRecommendations = () => {
         Only return the valid JSON, no introductory or explanatory text.
       `;
 
+      console.log('Sending prompt to Gemini:', prompt);
       const response = await generateGeminiResponse(prompt);
+      console.log('Received response from Gemini:', response);
       
       if (response.error) {
         throw new Error(response.error);
@@ -55,22 +57,41 @@ export const useGeminiYogaRecommendations = () => {
 
       // Extract JSON from response
       let jsonString = response.text;
+      
+      // Clean up the response to get valid JSON
       if (jsonString.includes('```json')) {
         jsonString = jsonString.split('```json')[1].split('```')[0].trim();
       } else if (jsonString.includes('```')) {
         jsonString = jsonString.split('```')[1].split('```')[0].trim();
       }
-
-      const recommendations = JSON.parse(jsonString);
       
-      return recommendations.map((rec: any, index: number) => ({
-        id: `recommendation-${Date.now()}-${index}`,
-        title: rec.title,
-        description: rec.description,
-        reason: rec.reason,
-        youtubeId: '', // Will be populated separately through YouTube search
-        thumbnail: '',  // Will be populated separately through YouTube search
-      }));
+      // Further cleanup to handle common issues
+      jsonString = jsonString.replace(/(\r\n|\n|\r)/gm, "");
+      
+      console.log('Parsed JSON string:', jsonString);
+      
+      try {
+        const recommendations = JSON.parse(jsonString);
+        console.log('Parsed recommendations:', recommendations);
+        
+        if (!Array.isArray(recommendations)) {
+          throw new Error('Response is not an array');
+        }
+        
+        return recommendations.map((rec: any, index: number) => ({
+          id: `recommendation-${Date.now()}-${index}`,
+          title: rec.title || 'Yoga Practice',
+          description: rec.description || 'Custom yoga practice',
+          reason: rec.reason || 'Personalized for your needs',
+          youtubeSearchTerm: rec.youtubeSearchTerm || 'yoga practice',
+          youtubeId: '', // Will be populated separately through YouTube search
+          thumbnail: '',  // Will be populated separately through YouTube search
+        }));
+      } catch (parseError) {
+        console.error('Error parsing JSON:', parseError);
+        console.error('Raw JSON string:', jsonString);
+        throw new Error('Failed to parse AI response');
+      }
     } catch (err) {
       console.error('Error generating yoga recommendations:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate recommendations');
