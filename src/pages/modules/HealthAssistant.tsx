@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Pill, Clock, Calendar, User, PlusCircle, Activity, X, Heart, Stethoscope } from "lucide-react";
+import { Calendar as CalendarIcon, Pill, Clock, Calendar, Heart, Stethoscope, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,8 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import SymptomAnalyzer from "@/components/health/SymptomAnalyzer";
+import { VitalMonitor } from "@/components/health/VitalMonitor";
+import { SymptomManager } from "@/components/health/SymptomManager";
 
 // Type definitions
 interface Medication {
@@ -32,13 +34,6 @@ interface Appointment {
   date: Date;
   time: string;
   location: string;
-  notes?: string;
-}
-
-interface Symptom {
-  name: string;
-  severity: 'mild' | 'moderate' | 'severe';
-  startDate: Date;
   notes?: string;
 }
 
@@ -89,15 +84,6 @@ const HealthAssistant = () => {
       time: '2:45 PM',
       location: 'Smile Dental Clinic',
       notes: 'Regular cleaning',
-    },
-  ]);
-
-  const [symptoms] = useState<Symptom[]>([
-    {
-      name: 'Headache',
-      severity: 'mild',
-      startDate: new Date(new Date().setDate(new Date().getDate() - 2)),
-      notes: 'Mainly in the afternoon',
     },
   ]);
   
@@ -386,97 +372,17 @@ const HealthAssistant = () => {
         <TabsContent value="health-check">
           <div className="grid gap-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-secondary/40">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-lifemate-purple" />
-                    Health Vitals
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm font-medium">Blood Pressure</p>
-                      <p className="text-xl font-semibold">120/80</p>
-                    </div>
-                    <Badge className="bg-green-600">Normal</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm font-medium">Heart Rate</p>
-                      <p className="text-xl font-semibold">72 bpm</p>
-                    </div>
-                    <Badge className="bg-green-600">Normal</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm font-medium">Blood Glucose</p>
-                      <p className="text-xl font-semibold">110 mg/dL</p>
-                    </div>
-                    <Badge className="bg-green-600">Normal</Badge>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">Track New Measurement</Button>
-                </CardFooter>
-              </Card>
+              {/* Health Vitals - Now with device connection */}
+              <VitalMonitor />
 
-              <Card className="bg-secondary/40">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <User className="h-5 w-5 text-lifemate-purple" />
-                    Symptom Checker
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Current Symptoms</p>
-                    
-                    {symptoms.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No symptoms reported</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {symptoms.map((symptom, index) => (
-                          <div 
-                            key={index} 
-                            className="bg-secondary/70 rounded-md p-3 flex items-center justify-between"
-                          >
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{symptom.name}</span>
-                                <Badge className={cn(
-                                  symptom.severity === 'mild' && "bg-yellow-600",
-                                  symptom.severity === 'moderate' && "bg-orange-600",
-                                  symptom.severity === 'severe' && "bg-red-600",
-                                )}>
-                                  {symptom.severity}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Since {format(symptom.startDate, "MMM d")}
-                                {symptom.notes && ` • ${symptom.notes}`}
-                              </p>
-                            </div>
-                            <Button variant="ghost" size="sm">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <Button className="w-full">Report New Symptom</Button>
-                </CardContent>
-              </Card>
+              {/* Symptom Manager - Now with full CRUD functionality */}
+              <SymptomManager />
             </div>
 
-            {/* New Symptom Analyzer Component */}
+            {/* Symptom Analyzer Component */}
             <SymptomAnalyzer />
 
-            <Card className="border-lifemate-purple/30">
+            <Card className="border-blue-500/30">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Heart className="h-5 w-5 text-red-400" />
@@ -487,7 +393,7 @@ const HealthAssistant = () => {
                 <ul className="space-y-3">
                   {healthTips.map((tip, index) => (
                     <li key={index} className="flex gap-2">
-                      <span className="text-lifemate-purple">•</span>
+                      <span className="text-blue-500">•</span>
                       <span>{tip}</span>
                     </li>
                   ))}
