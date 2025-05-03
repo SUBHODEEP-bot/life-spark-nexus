@@ -25,13 +25,14 @@ interface CustomRoutinesProps {
 // Form schema using Zod
 const routineSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
+  description: z.string().min(1, 'Description is required'),
   days: z.array(z.string()).min(1, 'Select at least one day'),
   timeOfDay: z.enum(['Morning', 'Evening', 'Both']),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   duration: z.string().min(1, 'Duration is required'),
   level: z.enum(['Beginner', 'Intermediate', 'Advanced']),
   poses: z.array(z.string()).default([]),
+  classes: z.array(z.string()).optional().default([]),
 });
 
 type RoutineFormValues = z.infer<typeof routineSchema>;
@@ -61,6 +62,7 @@ const CustomRoutines: React.FC<CustomRoutinesProps> = ({
       duration: '15 min',
       level: 'Beginner',
       poses: [],
+      classes: [],
     },
   });
 
@@ -76,11 +78,25 @@ const CustomRoutines: React.FC<CustomRoutinesProps> = ({
       duration: '15 min',
       level: 'Beginner',
       poses: [],
+      classes: [],
     },
   });
 
   const handleCreateRoutine = (values: RoutineFormValues) => {
-    const newRoutine = onAddRoutine(values);
+    // Ensure all required properties are included when passed to onAddRoutine
+    const newRoutineData: Omit<YogaRoutine, 'id'> = {
+      name: values.name,
+      description: values.description,
+      days: values.days,
+      timeOfDay: values.timeOfDay,
+      category: values.category,
+      duration: values.duration,
+      level: values.level,
+      poses: values.poses,
+      classes: values.classes || [],
+    };
+    
+    const newRoutine = onAddRoutine(newRoutineData);
     setIsCreateDialogOpen(false);
     createForm.reset();
     
@@ -89,9 +105,8 @@ const CustomRoutines: React.FC<CustomRoutinesProps> = ({
       description: `${newRoutine.name} has been added to your routines.`,
     });
     
-    // Set reminder notifications
+    // Schedule notifications for selected days
     if (window.Notification && Notification.permission === 'granted') {
-      // Schedule notifications for selected days
       values.days.forEach(day => {
         const dayIndex = days.indexOf(day);
         if (dayIndex !== -1) {
@@ -115,9 +130,17 @@ const CustomRoutines: React.FC<CustomRoutinesProps> = ({
   const handleEditRoutine = (values: RoutineFormValues) => {
     if (!currentRoutine) return;
     
-    const updatedRoutine = {
+    const updatedRoutine: YogaRoutine = {
       ...currentRoutine,
-      ...values,
+      name: values.name,
+      description: values.description,
+      days: values.days,
+      timeOfDay: values.timeOfDay,
+      category: values.category,
+      duration: values.duration,
+      level: values.level,
+      poses: values.poses,
+      classes: values.classes || currentRoutine.classes || [],
     };
     
     onUpdateRoutine(updatedRoutine);
