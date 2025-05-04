@@ -1,414 +1,163 @@
 
 import { useEffect, useState } from "react";
-import { Mail, Check, RefreshCw, Play, Pause, Volume2, ArrowRight, Star, Trash, Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Mail, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEmails } from "@/hooks/useEmails";
+import { useEmailAuth } from "@/context/EmailAuthContext";
+import AccountSidebar from "@/components/email/AccountSidebar";
+import EmailList from "@/components/email/EmailList";
+import VoiceSettings from "@/components/email/VoiceSettings";
+import AddAccountDialog from "@/components/email/AddAccountDialog";
+import EmailAuth from "@/components/email/EmailAuth";
+import { EmailAuthProvider } from "@/context/EmailAuthContext";
 
-interface Email {
-  id: string;
-  subject: string;
-  sender: string;
-  preview: string;
-  date: string;
-  read: boolean;
-  important: boolean;
-  folder: "inbox" | "important" | "archived";
-}
-
-type FolderType = "inbox" | "important" | "archived";
-
-const EmailSummary = () => {
-  const [loading, setLoading] = useState(true);
-  const [emails, setEmails] = useState<Email[]>([]);
-  const [playingEmailId, setPlayingEmailId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredEmails, setFilteredEmails] = useState<Email[]>([]);
-  const [activeTab, setActiveTab] = useState<FolderType>("inbox");
+const EmailSummaryContent = () => {
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { user, logout } = useEmailAuth();
+  const { 
+    accounts, 
+    emails, 
+    activeAccountId, 
+    loading, 
+    error,
+    setActiveAccountId,
+    handleOAuthCallback,
+    removeAccount,
+    generateSummary,
+    markAsRead,
+    toggleStar,
+    moveToFolder
+  } = useEmails();
 
+  const [oauthProcessed, setOauthProcessed] = useState(false);
+
+  // Process OAuth callback if code is present in URL
   useEffect(() => {
-    // Simulate loading emails
-    const timer = setTimeout(() => {
-      setEmails([
-        {
-          id: "1",
-          subject: "Weekly Report - Q1 Performance",
-          sender: "John Smith <john@company.com>",
-          preview: "Here's the summary of our quarterly performance as discussed in yesterday's meeting. Key highlights include a 15% increase in revenue and 8% decrease in operational costs. The team has exceeded expectations in several key areas including customer acquisition and retention.",
-          date: "Today, 10:34 AM",
-          read: false,
-          important: true,
-          folder: "inbox"
-        },
-        {
-          id: "2",
-          subject: "Meeting Reminder: Project Alpha",
-          sender: "Project Management <pm@company.com>",
-          preview: "This is a friendly reminder about tomorrow's meeting regarding Project Alpha. Please prepare your status reports and be ready to discuss the next phase of development. We'll be covering the timeline adjustments and budget allocations.",
-          date: "Yesterday",
-          read: true,
-          important: false,
-          folder: "inbox"
-        },
-        {
-          id: "3",
-          subject: "New Feature Release - v2.4.0",
-          sender: "Product Team <product@company.com>",
-          preview: "We're excited to announce the release of version 2.4.0 with the following features: improved user interface, faster load times, and enhanced security measures. Please update your installations at your earliest convenience.",
-          date: "May 12",
-          read: false,
-          important: true,
-          folder: "important"
-        },
-        {
-          id: "4",
-          subject: "Your Flight Confirmation",
-          sender: "Airlines Booking <bookings@airline.com>",
-          preview: "Thank you for booking with us. Your flight from New York to London on June 15th has been confirmed. Boarding pass and additional information will be sent 24 hours before departure.",
-          date: "May 10",
-          read: true,
-          important: true,
-          folder: "important"
-        },
-        {
-          id: "5",
-          subject: "Monthly Newsletter",
-          sender: "Marketing Team <news@company.com>",
-          preview: "Check out our monthly newsletter featuring industry insights, company updates, and employee spotlights. This month we're featuring the successful launch of our international expansion.",
-          date: "May 5",
-          read: true,
-          important: false,
-          folder: "archived"
-        },
-        {
-          id: "6",
-          subject: "Account Security Alert",
-          sender: "Security Team <security@company.com>",
-          preview: "We've detected a login attempt from a new device. If this was you, no action is needed. If you didn't attempt to login, please secure your account immediately by changing your password.",
-          date: "May 3",
-          read: false,
-          important: true,
-          folder: "inbox"
-        }
-      ]);
-      setLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    // Filter emails based on search query and active tab
-    if (searchQuery.trim() === "") {
-      setFilteredEmails(emails.filter(email => email.folder === activeTab));
-    } else {
-      const filtered = emails.filter(
-        email =>
-          (email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          email.sender.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          email.preview.toLowerCase().includes(searchQuery.toLowerCase())) &&
-          email.folder === activeTab
-      );
-      setFilteredEmails(filtered);
-    }
-  }, [searchQuery, emails, activeTab]);
-
-  const handleRefresh = () => {
-    setLoading(true);
-    toast({
-      title: "Refreshing emails",
-      description: "Checking for new messages...",
-    });
-    
-    setTimeout(() => {
-      // Add a new email at the top
-      const newEmail: Email = {
-        id: `new-${Date.now()}`,
-        subject: "Urgent: Team Meeting Update",
-        sender: "Sarah Johnson <sarah@company.com>",
-        preview: "The team meeting scheduled for tomorrow has been moved to 2:00 PM instead of 10:00 AM. Please update your calendars accordingly and let me know if you have any conflicts.",
-        date: "Just now",
-        read: false,
-        important: true,
-        folder: "inbox"
-      };
+    const processOAuthCallback = async () => {
+      const code = searchParams.get('code');
+      const state = searchParams.get('state');
       
-      setEmails([newEmail, ...emails]);
-      setLoading(false);
-      toast({
-        title: "Emails updated",
-        description: "You have 1 new message",
-      });
-    }, 1500);
-  };
-
-  const markAsRead = (id: string) => {
-    setEmails(emails.map(email => 
-      email.id === id ? { ...email, read: true } : email
-    ));
-    toast({
-      title: "Email marked as read",
-      description: "Email has been marked as read",
-    });
-  };
-
-  const toggleImportant = (id: string) => {
-    setEmails(emails.map(email => 
-      email.id === id ? { ...email, important: !email.important } : email
-    ));
-    
-    const email = emails.find(e => e.id === id);
-    toast({
-      title: email?.important ? "Removed from important" : "Marked as important",
-      description: `Email has been ${email?.important ? "removed from" : "added to"} important`,
-    });
-  };
-
-  const archiveEmail = (id: string) => {
-    setEmails(emails.map(email => 
-      email.id === id ? { ...email, folder: "archived" as const } : email
-    ));
-    toast({
-      title: "Email archived",
-      description: "Email has been moved to archive",
-    });
-  };
-
-  const deleteEmail = (id: string) => {
-    setEmails(emails.filter(email => email.id !== id));
-    toast({
-      title: "Email deleted",
-      description: "Email has been permanently deleted",
-    });
-  };
-
-  const handlePlaySummary = (id: string) => {
-    if (playingEmailId === id) {
-      setPlayingEmailId(null);
-      toast({
-        title: "Audio paused",
-        description: "Voice summary paused",
-      });
-    } else {
-      setPlayingEmailId(id);
-      toast({
-        title: "Playing summary",
-        description: "Voice summary is now playing",
-      });
+      if (!code || !state || oauthProcessed) return;
       
-      // Simulate finishing playing after 5 seconds
-      setTimeout(() => {
-        if (playingEmailId === id) {
-          setPlayingEmailId(null);
+      setOauthProcessed(true);
+      
+      try {
+        const success = await handleOAuthCallback(searchParams);
+        
+        if (success) {
+          // Clear URL params after successful processing
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
           toast({
-            title: "Summary complete",
-            description: "Voice summary finished playing",
+            title: "Account Connected",
+            description: "Your email account has been connected successfully.",
           });
         }
-      }, 5000);
+      } catch (err) {
+        console.error("OAuth callback error:", err);
+        toast({
+          title: "Connection Failed",
+          description: "Failed to connect your email account. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    processOAuthCallback();
+  }, [searchParams, handleOAuthCallback, toast, oauthProcessed]);
+
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive"
+      });
     }
-  };
+  }, [error, toast]);
+
+  // If no user is logged in, show auth component
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <EmailAuth />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">AI Voice Summary of Emails</h1>
-          <p className="text-muted-foreground">Get audio summaries of your emails and important notifications</p>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={handleRefresh}
-          disabled={loading}
-          className="flex gap-2 items-center"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4 items-start">
-        <div className="w-full md:w-3/4 space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search emails..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline" onClick={() => setSearchQuery("")}>
-              Clear
-            </Button>
+    <div className="flex flex-1 h-[calc(100vh-4rem)] overflow-hidden">
+      <AccountSidebar 
+        accounts={accounts} 
+        activeAccountId={activeAccountId} 
+        setActiveAccountId={setActiveAccountId}
+        removeAccount={removeAccount}
+      />
+      
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="p-6 border-b flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Email AI Summary</h1>
+            <p className="text-muted-foreground">
+              Get AI-generated summaries of your emails with voice playback
+            </p>
           </div>
           
-          <Tabs defaultValue={activeTab} onValueChange={(value: FolderType) => setActiveTab(value)} className="w-full">
-            <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="inbox">Inbox</TabsTrigger>
-              <TabsTrigger value="important">Important</TabsTrigger>
-              <TabsTrigger value="archived">Archived</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="inbox" className="mt-4">
-              {renderEmailList()}
-            </TabsContent>
-            
-            <TabsContent value="important" className="mt-4">
-              {renderEmailList()}
-            </TabsContent>
-            
-            <TabsContent value="archived" className="mt-4">
-              {renderEmailList()}
-            </TabsContent>
-          </Tabs>
+          <div className="flex items-center gap-4">
+            {accounts.length === 0 && (
+              <AddAccountDialog />
+            )}
+            <Button variant="outline" onClick={logout}>Logout</Button>
+          </div>
         </div>
         
-        <div className="w-full md:w-1/4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center text-lg">
-                <Volume2 className="h-5 w-5 mr-2 text-lifemate-purple" /> Voice Summary
-              </CardTitle>
-              <CardDescription>Voice summary settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Summary Style</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" variant="default" className="w-full">Detailed</Button>
-                  <Button size="sm" variant="outline" className="w-full">Concise</Button>
-                </div>
+        <div className="flex-1 p-6 overflow-hidden">
+          {accounts.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center">
+              <div className="rounded-full bg-muted p-6 mb-4">
+                <Mail className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Connect Your Email</h2>
+              <p className="text-muted-foreground max-w-md mb-6">
+                Connect your email accounts to get AI-powered summaries and voice features
+              </p>
+              <AddAccountDialog />
+            </div>
+          ) : (
+            <div className="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
+              <div className="w-full md:w-3/4 overflow-auto pr-2">
+                <EmailList 
+                  emails={emails}
+                  loading={loading}
+                  onMarkAsRead={markAsRead}
+                  onToggleStar={toggleStar}
+                  onMoveToFolder={moveToFolder}
+                  onGenerateSummary={generateSummary}
+                />
               </div>
               
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Voice Speed</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button size="sm" variant="outline" className="w-full">Slow</Button>
-                  <Button size="sm" variant="default" className="w-full">Normal</Button>
-                  <Button size="sm" variant="outline" className="w-full">Fast</Button>
-                </div>
+              <div className="w-full md:w-1/4">
+                <VoiceSettings />
               </div>
-              
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Voice Type</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" variant="default" className="w-full">Female</Button>
-                  <Button size="sm" variant="outline" className="w-full">Male</Button>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant="outline" 
-                className="w-full" 
-                onClick={() => {
-                  toast({
-                    title: "Settings saved",
-                    description: "Voice summary settings have been updated",
-                  });
-                }}
-              >
-                Save Settings
-              </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-  
-  function renderEmailList() {
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12">
-          <RefreshCw className="h-8 w-8 text-lifemate-purple animate-spin mb-4" />
-          <p className="text-muted-foreground">Loading your emails...</p>
-        </div>
-      );
-    }
-    
-    const emailsToShow = filteredEmails;
-    
-    if (emailsToShow.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium">No emails found</h3>
-          <p className="text-muted-foreground">
-            {searchQuery ? "Try a different search term" : "Your inbox is empty or not connected"}
-          </p>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="grid gap-4">
-        {emailsToShow.map(email => (
-          <Card key={email.id} className={`transition-all hover:shadow-md ${!email.read ? 'border-l-4 border-l-lifemate-purple' : ''}`}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    {email.subject}
-                    {email.important && (
-                      <Badge variant="default" className="bg-lifemate-orange">Important</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>{email.sender}</CardDescription>
-                </div>
-                <span className="text-xs text-muted-foreground">{email.date}</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">{email.preview}</p>
-            </CardContent>
-            <CardFooter className="flex flex-wrap justify-between gap-2 pt-0">
-              <div className="flex flex-wrap gap-2">
-                <Button variant="ghost" size="sm" onClick={() => markAsRead(email.id)}>
-                  <Check className="h-4 w-4 mr-2" /> Mark as read
-                </Button>
-                <Button 
-                  variant={playingEmailId === email.id ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => handlePlaySummary(email.id)}
-                  className={playingEmailId === email.id ? "bg-lifemate-purple hover:bg-lifemate-purple-dark" : ""}
-                >
-                  {playingEmailId === email.id ? (
-                    <>
-                      <Pause className="h-4 w-4 mr-2" /> Pause
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4 mr-2" /> Play summary
-                    </>
-                  )}
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => toggleImportant(email.id)}>
-                  <Star className={`h-4 w-4 mr-2 ${email.important ? "text-yellow-400 fill-yellow-400" : ""}`} /> 
-                  {email.important ? "Remove star" : "Star"}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => archiveEmail(email.id)}>
-                  <ArrowRight className="h-4 w-4 mr-2" /> Archive
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => deleteEmail(email.id)} className="text-red-500 hover:text-red-600">
-                  <Trash className="h-4 w-4 mr-2" /> Delete
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    );
-  }
+};
+
+// Wrap with auth provider
+const EmailSummary = () => {
+  return (
+    <EmailAuthProvider>
+      <EmailSummaryContent />
+    </EmailAuthProvider>
+  );
 };
 
 export default EmailSummary;
