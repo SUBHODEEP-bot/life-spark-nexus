@@ -18,8 +18,12 @@ const OAuthHandler = ({ onProcessOAuth }: OAuthHandlerProps) => {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       
-      if (!code || !state || oauthProcessed) return;
+      if (!code || !oauthProcessed) {
+        // We're either not on a callback URL or have already processed this code
+        return;
+      }
       
+      console.log("Processing OAuth callback with code:", code);
       setOauthProcessed(true);
       
       try {
