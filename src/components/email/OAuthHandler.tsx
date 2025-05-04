@@ -17,9 +17,21 @@ const OAuthHandler = ({ onProcessOAuth }: OAuthHandlerProps) => {
     const processOAuthCallback = async () => {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
+      const savedState = localStorage.getItem('gmail_oauth_state');
       
-      if (!code || !oauthProcessed) {
-        // We're either not on a callback URL or have already processed this code
+      // Check if we have a code and haven't processed this callback yet
+      if (!code || oauthProcessed) {
+        return;
+      }
+      
+      // Validate state parameter to prevent CSRF attacks
+      if (state !== savedState) {
+        console.error("State mismatch in OAuth callback", { state, savedState });
+        toast({
+          title: "Security Error",
+          description: "Authentication failed due to state parameter mismatch. Please try again.",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -45,6 +57,9 @@ const OAuthHandler = ({ onProcessOAuth }: OAuthHandlerProps) => {
           description: "Failed to connect your email account. Please try again.",
           variant: "destructive"
         });
+      } finally {
+        // Clean up the state from localStorage regardless of outcome
+        localStorage.removeItem('gmail_oauth_state');
       }
     };
     

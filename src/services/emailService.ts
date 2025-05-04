@@ -10,8 +10,8 @@ const EMAIL_USER_ID = 'a8Z0Ywd6Efq0mY_tr';
 // Gmail API credentials
 const GMAIL_CLIENT_ID = '323977921802-v9ovnt9v5m8qofevtr77p124ejlv4f6s.apps.googleusercontent.com';
 const GMAIL_CLIENT_SECRET = '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';
-// Updated redirect URI to match Google Cloud Console configuration
-const GMAIL_REDIRECT_URI = 'https://lovable.dev/api/auth/callback/google';
+// Set redirect URI to the current app's email-summary page
+const GMAIL_REDIRECT_URI = `${window.location.origin}/email-summary`;
 
 // Scopes for Gmail API
 const GMAIL_SCOPES = [
