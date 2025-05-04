@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ interface AIRecommendationsProps {
 const AIRecommendations: React.FC<AIRecommendationsProps> = ({
   recommendations: savedRecommendations
 }) => {
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [fitnessLevel, setFitnessLevel] = useState('Beginner');
   const [timeAvailable, setTimeAvailable] = useState('15-30 minutes');
@@ -39,6 +39,8 @@ const AIRecommendations: React.FC<AIRecommendationsProps> = ({
     results: videoResults,
     loading: searchLoading
   } = useYouTubeSearch();
+  
+  
   
   const handleToggleHealthConcern = (value: string) => {
     setHealthConcerns(prev => prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value]);
@@ -103,9 +105,10 @@ const AIRecommendations: React.FC<AIRecommendationsProps> = ({
   const healthConcernsList = ["Back pain", "Stress/anxiety", "Poor flexibility", "Joint pain", "Posture issues", "Insomnia", "Low energy"];
   const goalsList = ["Increase flexibility", "Build strength", "Improve balance", "Reduce stress", "Better sleep", "Weight management", "Mental clarity"];
   
-  // Fix: Return JSX instead of void
+  // Return JSX 
   return (
     <div className="space-y-6">
+      
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">AI Yoga Recommendations</h2>
@@ -341,7 +344,8 @@ const AIRecommendations: React.FC<AIRecommendationsProps> = ({
               
               {selectedRecommendation.youtubeId && (
                 <div className="aspect-video overflow-hidden rounded-md">
-                  <YoutubeEmbed videoId={selectedRecommendation.youtubeId} />
+                  
+                  <YoutubeEmbed youtubeId={selectedRecommendation.youtubeId} />
                 </div>
               )}
               
