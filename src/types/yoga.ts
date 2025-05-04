@@ -63,6 +63,11 @@ export interface YogaRecommendation {
   yogaPoseIds?: string[];
   thumbnail?: string;
   youtubeId?: string;
+  // Add these missing properties
+  benefits: string[];
+  tags: string[];
+  instructions?: string;
+  youtubeSearchTerm?: string;
 }
 
 export interface YogaExpertResponse {

@@ -32,7 +32,10 @@ export const useGeminiYogaRecommendations = () => {
         1. A title for the yoga practice
         2. A short description (under 100 words)
         3. A clear reason why this practice is good for this person
-        4. YouTube search terms to find a video for this practice
+        4. A list of 3-5 benefits of this practice
+        5. A list of 3-5 tags for this practice (e.g., "Morning", "Relaxation", "Back Pain")
+        6. Simple instructions for the practice
+        7. YouTube search terms to find a video for this practice
 
         Format your response in JSON like this:
         [
@@ -40,6 +43,9 @@ export const useGeminiYogaRecommendations = () => {
             "title": "Practice Title",
             "description": "Practice description",
             "reason": "Reason this practice is recommended",
+            "benefits": ["Benefit 1", "Benefit 2", "Benefit 3"],
+            "tags": ["Tag 1", "Tag 2", "Tag 3"],
+            "instructions": "Simple instructions for the practice",
             "youtubeSearchTerm": "search term for YouTube"
           }
         ]
@@ -84,8 +90,11 @@ export const useGeminiYogaRecommendations = () => {
           description: rec.description || 'Custom yoga practice',
           reason: rec.reason || 'Personalized for your needs',
           youtubeSearchTerm: rec.youtubeSearchTerm || 'yoga practice',
+          benefits: rec.benefits || ['Improves flexibility', 'Reduces stress', 'Builds strength'],
+          tags: rec.tags || ['Yoga', 'Wellness', 'Fitness'],
+          instructions: rec.instructions || 'Follow along with the video for this practice',
           youtubeId: '', // Will be populated separately through YouTube search
-          thumbnail: '',  // Will be populated separately through YouTube search
+          thumbnail: '', // Will be populated separately through YouTube search
         }));
       } catch (parseError) {
         console.error('Error parsing JSON:', parseError);
