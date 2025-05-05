@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Mic, Volume2, Languages, ArrowRight, History, Bookmark, RefreshCw, CheckCircle2, Copy, Star, Upload, FileAudio, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -920,3 +921,117 @@ const VoiceTranslator = () => {
                 description: "Language learning features coming soon",
               });
             }}
+          >
+            View Language Learning Resources
+          </Button>
+        </CardFooter>
+      </Card>
+      
+      {/* Language selection dialog */}
+      <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Select {dialogMode === "source" ? "Source" : "Target"} Language
+            </DialogTitle>
+            <DialogDescription>
+              Choose the language you want to {dialogMode === "source" ? "translate from" : "translate to"}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 py-4">
+            {languages.map((language) => (
+              <Button
+                key={language.code}
+                variant="outline"
+                className="justify-start"
+                onClick={() => handleSelectLanguage(language.code)}
+              >
+                <span className="text-lg mr-2">{language.flag}</span>
+                {language.name}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* File upload dialog */}
+      <Dialog open={showFileUploadDialog} onOpenChange={setShowFileUploadDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload File</DialogTitle>
+            <DialogDescription>
+              Upload an audio file for transcription or an image for text extraction.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <RadioGroup 
+              defaultValue="audio" 
+              value={uploadType}
+              onValueChange={(value) => setUploadType(value as "audio" | "image")}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="audio" id="audio" />
+                <Label htmlFor="audio" className="flex items-center gap-2">
+                  <FileAudio className="h-4 w-4" /> Audio File
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="image" id="image" />
+                <Label htmlFor="image" className="flex items-center gap-2">
+                  <Image className="h-4 w-4" /> Image
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            <div className="space-y-2">
+              <Label htmlFor="file-upload">
+                {uploadType === "audio" 
+                  ? "Select an audio file (.mp3, .wav, .m4a)" 
+                  : "Select an image file (.jpg, .png, .pdf)"
+                }
+              </Label>
+              <input 
+                type="file" 
+                id="file-upload" 
+                className="hidden"
+                ref={fileInputRef}
+                accept={uploadType === "audio" ? "audio/*" : "image/*"} 
+                onChange={processFileUpload}
+              />
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Select File
+              </Button>
+            </div>
+            
+            {isUploading && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Uploading...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="ghost"
+              onClick={() => setShowFileUploadDialog(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default VoiceTranslator;
