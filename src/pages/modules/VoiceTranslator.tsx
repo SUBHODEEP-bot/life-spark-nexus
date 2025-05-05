@@ -662,7 +662,7 @@ const VoiceTranslator = () => {
                     <Button
                       variant={speaking ? "default" : "outline"}
                       size="icon"
-                      className={`rounded-full ${speaking ? 'bg-lifemate-purple text-white' : ''}`}
+                      className={`rounded-full ${speaking ? 'bg-purple-500 text-white' : ''}`}
                       onClick={() => handlePlayTranslation()}
                     >
                       <Volume2 className="h-4 w-4" />
@@ -713,7 +713,7 @@ const VoiceTranslator = () => {
                     <p className="text-xs text-muted-foreground">Automatically detect source language</p>
                   </div>
                   <div 
-                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${autoDetectLanguage ? 'bg-lifemate-purple' : 'bg-secondary'}`} 
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${autoDetectLanguage ? 'bg-purple-500' : 'bg-secondary'}`} 
                     onClick={() => {
                       setAutoDetectLanguage(!autoDetectLanguage);
                       toast({
@@ -732,7 +732,7 @@ const VoiceTranslator = () => {
                     <p className="text-xs text-muted-foreground">Automatically play translation audio</p>
                   </div>
                   <div 
-                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${autoPlayTranslation ? 'bg-lifemate-purple' : 'bg-secondary'}`}
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${autoPlayTranslation ? 'bg-purple-500' : 'bg-secondary'}`}
                     onClick={() => {
                       setAutoPlayTranslation(!autoPlayTranslation);
                       toast({
@@ -751,7 +751,7 @@ const VoiceTranslator = () => {
                     <p className="text-xs text-muted-foreground">Use offline translation when available</p>
                   </div>
                   <div 
-                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${offlineMode ? 'bg-lifemate-purple' : 'bg-secondary'}`}
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${offlineMode ? 'bg-purple-500' : 'bg-secondary'}`}
                     onClick={() => {
                       setOfflineMode(!offlineMode);
                       toast({
@@ -900,4 +900,3 @@ const VoiceTranslator = () => {
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       </Button>
                     </div>
-                  </
