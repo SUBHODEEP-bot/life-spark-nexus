@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useRef } from "react";
-import { Mic, Volume2, Languages, ArrowRight, History, Bookmark, RefreshCw, CheckCircle2, Copy, Star, Upload, FileAudio, Image } from "lucide-react";
+import { Mic, Volume2, Languages, ArrowRight, History, Bookmark, RefreshCw, Copy, Star, Upload, FileAudio, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -75,8 +74,10 @@ const VoiceTranslator = () => {
   const { toast } = useToast();
   const { speak, stop, speaking, settings, updateSettings } = useSpeechSynthesis();
   
-  // Speech recognition setup
+  // Speech recognition setup with timeout for automatic translation
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const speechTimeoutRef = useRef<number | null>(null);
+  const previousTranscriptRef = useRef<string>("");
 
   const [translationHistory, setTranslationHistory] = useState<Translation[]>([
     {
@@ -127,10 +128,9 @@ const VoiceTranslator = () => {
     { code: "tr", name: "Turkish", flag: "🇹🇷" },
   ];
 
-  // Initialize speech recognition
+  // Enhanced speech recognition with auto translation
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Properly check for SpeechRecognition with type safety
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (SpeechRecognitionAPI) {
@@ -144,8 +144,33 @@ const VoiceTranslator = () => {
               .map(result => result[0])
               .map(result => result.transcript)
               .join('');
-              
+            
             setSourceText(transcript);
+            
+            // If there's a silence detection timeout running, clear it
+            if (speechTimeoutRef.current !== null) {
+              clearTimeout(speechTimeoutRef.current);
+            }
+            
+            // Set a new timeout - if no new speech is detected in 1.5 seconds, trigger translation
+            speechTimeoutRef.current = window.setTimeout(() => {
+              // Only translate if we have new content and user is still in listening mode
+              if (transcript.trim() !== previousTranscriptRef.current.trim() && 
+                  transcript.trim() !== "" && isListening) {
+                previousTranscriptRef.current = transcript;
+                handleTranslateClick();
+                
+                // Optional: stop listening after translation
+                if (recognitionRef.current) {
+                  recognitionRef.current.stop();
+                  setIsListening(false);
+                  toast({
+                    title: "Voice Input Complete",
+                    description: "Your speech has been recorded and translated.",
+                  });
+                }
+              }
+            }, 1500);
           };
           
           recognitionRef.current.onend = () => {
@@ -153,6 +178,11 @@ const VoiceTranslator = () => {
               recognitionRef.current?.start();
             } else {
               setIsListening(false);
+              // If listening manually ended and we have text, translate it
+              if (sourceText.trim() !== "" && sourceText.trim() !== previousTranscriptRef.current.trim()) {
+                previousTranscriptRef.current = sourceText;
+                handleTranslateClick();
+              }
             }
           };
           
@@ -197,8 +227,14 @@ const VoiceTranslator = () => {
           console.error('Error cleaning up speech recognition:', error);
         }
       }
+      
+      // Clear any pending timeouts
+      if (speechTimeoutRef.current !== null) {
+        clearTimeout(speechTimeoutRef.current);
+        speechTimeoutRef.current = null;
+      }
     };
-  }, [toast, isListening]);
+  }, [toast, isListening, sourceText]);
 
   // Update speech recognition language when source language changes
   useEffect(() => {
@@ -235,14 +271,16 @@ const VoiceTranslator = () => {
         description: "Your speech has been recorded.",
       });
     } else {
-      setSourceText(""); // Clear previous text
+      // Reset state for new recording
+      setSourceText(""); 
+      previousTranscriptRef.current = "";
       setIsListening(true);
       recognitionRef.current.lang = sourceLanguage;
       try {
         recognitionRef.current.start();
         toast({
           title: "Listening",
-          description: "Speak now...",
+          description: "Speak now... Translation will start after you pause speaking.",
         });
       } catch (error) {
         console.error('Error starting speech recognition:', error);
@@ -578,10 +616,10 @@ const VoiceTranslator = () => {
                 <Button
                   variant={isListening ? "destructive" : "outline"}
                   size="icon"
-                  className={`absolute bottom-3 right-3 rounded-full`}
+                  className={`absolute bottom-3 right-3 rounded-full ${isListening ? 'animate-pulse' : ''}`}
                   onClick={handleListenClick}
                 >
-                  <Mic className="h-4 w-4" />
+                  <Mic className={`h-4 w-4 ${isListening ? 'text-white' : ''}`} />
                 </Button>
               </div>
               
@@ -862,209 +900,4 @@ const VoiceTranslator = () => {
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent className="py-2">
-                    <div className="space-y-2">
-                      <div className="text-sm">
-                        <span className="font-medium">{getLanguageNameByCode(translation.sourceLanguage)}:</span>
-                        <p className="mt-1 text-muted-foreground">{translation.sourceText}</p>
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">{getLanguageNameByCode(translation.targetLanguage)}:</span>
-                        <p className="mt-1 text-black dark:text-white">{translation.translatedText}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="pt-2 border-t flex justify-between">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(translation.translatedText);
-                        toast({
-                          title: "Copied to Clipboard",
-                          description: "Translation has been copied to clipboard.",
-                        });
-                      }}
-                    >
-                      <Copy className="h-4 w-4 mr-2" /> Copy
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => loadFromHistory(translation)}
-                    >
-                      Use Again
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <div className="inline-block p-4 bg-secondary rounded-full mb-4">
-                  <Bookmark className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-xl font-medium">No Saved Translations</h3>
-                <p className="text-muted-foreground">Your favorite translations will appear here</p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Language Skills</CardTitle>
-          <CardDescription>Track your language proficiency</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Bengali</span>
-                <span>Intermediate</span>
-              </div>
-              <Progress value={65} className="h-2" />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Spanish</span>
-                <span>Beginner</span>
-              </div>
-              <Progress value={30} className="h-2" />
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>French</span>
-                <span>Novice</span>
-              </div>
-              <Progress value={15} className="h-2" />
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => {
-              toast({
-                title: "Language Learning",
-                description: "Language learning features coming soon",
-              });
-            }}
-          >
-            View Language Learning Resources
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      {/* Language selection dialog */}
-      <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              Select {dialogMode === "source" ? "Source" : "Target"} Language
-            </DialogTitle>
-            <DialogDescription>
-              Choose the language you want to {dialogMode === "source" ? "translate from" : "translate to"}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-2 py-4">
-            {languages.map((language) => (
-              <Button
-                key={language.code}
-                variant="outline"
-                className="justify-start"
-                onClick={() => handleSelectLanguage(language.code)}
-              >
-                <span className="text-lg mr-2">{language.flag}</span>
-                {language.name}
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* File upload dialog */}
-      <Dialog open={showFileUploadDialog} onOpenChange={setShowFileUploadDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upload File</DialogTitle>
-            <DialogDescription>
-              Upload an audio file for transcription or an image for text extraction.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <RadioGroup 
-              defaultValue="audio" 
-              value={uploadType}
-              onValueChange={(value) => setUploadType(value as "audio" | "image")}
-              className="flex gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="audio" id="audio" />
-                <Label htmlFor="audio" className="flex items-center gap-2">
-                  <FileAudio className="h-4 w-4" /> Audio File
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="image" id="image" />
-                <Label htmlFor="image" className="flex items-center gap-2">
-                  <Image className="h-4 w-4" /> Image
-                </Label>
-              </div>
-            </RadioGroup>
-            
-            <div className="space-y-2">
-              <Label htmlFor="file-upload">
-                {uploadType === "audio" 
-                  ? "Select an audio file (.mp3, .wav, .m4a)" 
-                  : "Select an image file (.jpg, .png, .pdf)"
-                }
-              </Label>
-              <input 
-                type="file" 
-                id="file-upload" 
-                className="hidden"
-                ref={fileInputRef}
-                accept={uploadType === "audio" ? "audio/*" : "image/*"} 
-                onChange={processFileUpload}
-              />
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Select File
-              </Button>
-            </div>
-            
-            {isUploading && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Uploading...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <Progress value={uploadProgress} className="h-2" />
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="ghost"
-              onClick={() => setShowFileUploadDialog(false)}
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default VoiceTranslator;
+                  </
