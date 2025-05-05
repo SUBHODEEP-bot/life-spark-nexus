@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Mic, Volume2, Languages, ArrowRight, History, Bookmark, RefreshCw, CheckCircle2, Copy, Star, Upload, FileAudio, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -128,44 +127,49 @@ const VoiceTranslator = () => {
 
   // Initialize speech recognition
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
+    if (typeof window !== 'undefined') {
+      // Properly check for SpeechRecognition with type safety
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(result => result.transcript)
-          .join('');
-          
-        setSourceText(transcript);
-      };
-      
-      recognitionRef.current.onend = () => {
-        if (isListening) {
-          recognitionRef.current?.start();
-        } else {
+      if (SpeechRecognitionAPI) {
+        recognitionRef.current = new SpeechRecognitionAPI();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        
+        recognitionRef.current.onresult = (event) => {
+          const transcript = Array.from(event.results)
+            .map(result => result[0])
+            .map(result => result.transcript)
+            .join('');
+            
+          setSourceText(transcript);
+        };
+        
+        recognitionRef.current.onend = () => {
+          if (isListening) {
+            recognitionRef.current?.start();
+          } else {
+            setIsListening(false);
+          }
+        };
+        
+        recognitionRef.current.onerror = (event) => {
+          console.error('Speech recognition error', event.error);
           setIsListening(false);
-        }
-      };
-      
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        setIsListening(false);
+          toast({
+            title: "Speech Recognition Error",
+            description: `Error: ${event.error}. Please try again.`,
+            variant: "destructive",
+          });
+        };
+      } else {
+        console.error('Speech Recognition API not supported in this browser');
         toast({
-          title: "Speech Recognition Error",
-          description: `Error: ${event.error}. Please try again.`,
+          title: "Speech Recognition Not Supported",
+          description: "Your browser does not support speech recognition.",
           variant: "destructive",
         });
-      };
-    } else {
-      toast({
-        title: "Speech Recognition Not Supported",
-        description: "Your browser does not support speech recognition.",
-        variant: "destructive",
-      });
+      }
     }
     
     return () => {
@@ -173,7 +177,12 @@ const VoiceTranslator = () => {
         recognitionRef.current.onresult = null;
         recognitionRef.current.onend = null;
         recognitionRef.current.onerror = null;
-        recognitionRef.current.abort();
+        try {
+          // Only call abort if recognition is active
+          recognitionRef.current.abort();
+        } catch (error) {
+          console.error('Error cleaning up speech recognition:', error);
+        }
       }
     };
   }, [toast, isListening]);
@@ -911,120 +920,3 @@ const VoiceTranslator = () => {
                 description: "Language learning features coming soon",
               });
             }}
-          >
-            View Language Courses
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      {/* Language Selection Dialog */}
-      <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogMode === "source" ? "Select Source Language" : "Select Target Language"}
-            </DialogTitle>
-            <DialogDescription>
-              Choose the language you want to {dialogMode === "source" ? "translate from" : "translate to"}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="grid grid-cols-2 gap-2">
-              {languages.map(language => (
-                <Button
-                  key={language.code}
-                  variant={
-                    (dialogMode === "source" && sourceLanguage === language.code) ||
-                    (dialogMode === "target" && targetLanguage === language.code)
-                      ? "default"
-                      : "outline"
-                  }
-                  className="justify-start"
-                  onClick={() => handleSelectLanguage(language.code)}
-                >
-                  <span className="text-lg mr-2">{language.flag}</span>
-                  {language.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLanguageDialog(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* File Upload Dialog */}
-      <Dialog open={showFileUploadDialog} onOpenChange={setShowFileUploadDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upload File for Translation</DialogTitle>
-            <DialogDescription>
-              Upload an audio file or image with text to translate
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">File Type</h3>
-              <RadioGroup 
-                value={uploadType} 
-                onValueChange={(value) => setUploadType(value as "audio" | "image")}
-                className="flex space-x-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="audio" id="audio" />
-                  <Label htmlFor="audio" className="flex items-center gap-2">
-                    <FileAudio className="h-4 w-4" /> Audio File
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="image" id="image" />
-                  <Label htmlFor="image" className="flex items-center gap-2">
-                    <Image className="h-4 w-4" /> Image with Text
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="file-upload">Select File</Label>
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                accept={uploadType === "audio" ? "audio/*" : "image/*"}
-                onChange={processFileUpload}
-                ref={fileInputRef}
-                disabled={isUploading}
-              />
-              <Button 
-                variant="outline" 
-                className="w-full" 
-                disabled={isUploading}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {isUploading ? "Uploading..." : "Choose File"}
-              </Button>
-              
-              {isUploading && (
-                <div className="w-full space-y-2">
-                  <Progress value={uploadProgress} className="w-full" />
-                  <p className="text-xs text-center text-muted-foreground">{uploadProgress}% complete</p>
-                </div>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFileUploadDialog(false)} disabled={isUploading}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default VoiceTranslator;
