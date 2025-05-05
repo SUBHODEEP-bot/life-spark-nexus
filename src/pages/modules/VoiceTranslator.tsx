@@ -1,12 +1,14 @@
 
-import { useState, useEffect } from "react";
-import { Mic, Volume2, Languages, ArrowRight, History, Bookmark, RefreshCw, CheckCircle2, Copy, Star } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Mic, Volume2, Languages, ArrowRight, History, Bookmark, RefreshCw, CheckCircle2, Copy, Star, Upload, FileAudio, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { generateGeminiResponse } from "@/utils/aiHelpers";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface Translation {
   id: string;
@@ -48,6 +61,22 @@ const VoiceTranslator = () => {
   const [translatedText, setTranslatedText] = useState("");
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [targetLanguage, setTargetLanguage] = useState("es");
+  const [showLanguageDialog, setShowLanguageDialog] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"source" | "target">("source");
+  const [autoDetectLanguage, setAutoDetectLanguage] = useState(true);
+  const [autoPlayTranslation, setAutoPlayTranslation] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [showFileUploadDialog, setShowFileUploadDialog] = useState(false);
+  const [uploadType, setUploadType] = useState<"audio" | "image">("audio");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const { speak, stop, speaking, settings, updateSettings } = useSpeechSynthesis();
+  
+  // Speech recognition setup
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
   const [translationHistory, setTranslationHistory] = useState<Translation[]>([
     {
       id: "1",
@@ -77,9 +106,6 @@ const VoiceTranslator = () => {
       isFavorite: true
     }
   ]);
-  const [showLanguageDialog, setShowLanguageDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState<"source" | "target">("source");
-  const { toast } = useToast();
 
   const languages: Language[] = [
     { code: "en", name: "English", flag: "🇺🇸" },
@@ -94,7 +120,63 @@ const VoiceTranslator = () => {
     { code: "ko", name: "Korean", flag: "🇰🇷" },
     { code: "ar", name: "Arabic", flag: "🇸🇦" },
     { code: "hi", name: "Hindi", flag: "🇮🇳" },
+    { code: "bn", name: "Bengali", flag: "🇧🇩" },
+    { code: "th", name: "Thai", flag: "🇹🇭" },
+    { code: "vi", name: "Vietnamese", flag: "🇻🇳" },
+    { code: "tr", name: "Turkish", flag: "🇹🇷" },
   ];
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      
+      recognitionRef.current.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+          
+        setSourceText(transcript);
+      };
+      
+      recognitionRef.current.onend = () => {
+        if (isListening) {
+          recognitionRef.current?.start();
+        } else {
+          setIsListening(false);
+        }
+      };
+      
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+        toast({
+          title: "Speech Recognition Error",
+          description: `Error: ${event.error}. Please try again.`,
+          variant: "destructive",
+        });
+      };
+    } else {
+      toast({
+        title: "Speech Recognition Not Supported",
+        description: "Your browser does not support speech recognition.",
+        variant: "destructive",
+      });
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.abort();
+      }
+    };
+  }, [toast, isListening]);
 
   const getLanguageNameByCode = (code: string): string => {
     const language = languages.find(lang => lang.code === code);
@@ -107,37 +189,34 @@ const VoiceTranslator = () => {
   };
 
   const handleListenClick = () => {
+    if (!recognitionRef.current) {
+      toast({
+        title: "Speech Recognition Not Available",
+        description: "Your browser does not support speech recognition.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (isListening) {
+      recognitionRef.current.stop();
       setIsListening(false);
-      setSourceText("Hello, how are you doing today? I'm looking for directions to the nearest hotel. Can you help me please?");
-      
       toast({
         title: "Voice Input Complete",
         description: "Your speech has been recorded.",
       });
     } else {
       setIsListening(true);
-      setSourceText("");
-      
+      recognitionRef.current.lang = sourceLanguage;
+      recognitionRef.current.start();
       toast({
         title: "Listening",
         description: "Speak now...",
       });
-      
-      // Simulate listening for 3 seconds
-      setTimeout(() => {
-        setIsListening(false);
-        setSourceText("Hello, how are you doing today? I'm looking for directions to the nearest hotel. Can you help me please?");
-        
-        toast({
-          title: "Voice Input Complete",
-          description: "Your speech has been recorded.",
-        });
-      }, 3000);
     }
   };
 
-  const handleTranslateClick = () => {
+  const handleTranslateClick = async () => {
     if (!sourceText.trim()) {
       toast({
         title: "Empty Text",
@@ -149,25 +228,21 @@ const VoiceTranslator = () => {
     
     setIsTranslating(true);
     
-    // Simulate translation
-    setTimeout(() => {
-      const translations = {
-        "es": "Hola, ¿cómo estás hoy? Estoy buscando direcciones al hotel más cercano. ¿Puedes ayudarme por favor?",
-        "fr": "Bonjour, comment allez-vous aujourd'hui? Je cherche des directions vers l'hôtel le plus proche. Pouvez-vous m'aider s'il vous plaît?",
-        "de": "Hallo, wie geht es dir heute? Ich suche nach einer Wegbeschreibung zum nächsten Hotel. Können Sie mir bitte helfen?",
-        "it": "Ciao, come stai oggi? Sto cercando indicazioni per l'hotel più vicino. Puoi aiutarmi per favore?",
-        "pt": "Olá, como você está hoje? Estou procurando direções para o hotel mais próximo. Você pode me ajudar, por favor?",
-        "ru": "Здравствуйте, как у вас дела сегодня? Я ищу дорогу к ближайшему отелю. Не могли бы вы мне помочь, пожалуйста?",
-        "zh": "你好，今天过得怎么样？我正在寻找去最近酒店的路线。你能帮助我吗？",
-        "ja": "こんにちは、今日の調子はどうですか？最寄りのホテルまでの道順を探しています。手伝っていただけますか？",
-        "ko": "안녕하세요, 오늘 어떻게 지내세요? 가장 가까운 호텔로 가는 길을 찾고 있습니다. 도와주시겠어요?",
-        "ar": "مرحبًا ، كيف حالك اليوم؟ أنا أبحث عن الاتجاهات إلى أقرب فندق. هل يمكنك مساعدتي من فضلك؟",
-        "hi": "नमस्ते, आज आप कैसे हैं? मैं निकटतम होटल के लिए दिशा-निर्देश ढूंढ रहा हूं। क्या आप मेरी मदद कर सकते हैं?"
-      };
+    try {
+      // Construct a prompt for Gemini that asks for translation
+      const translationPrompt = `Translate the following text from ${getLanguageNameByCode(sourceLanguage)} to ${getLanguageNameByCode(targetLanguage)}. Only provide the translation, no explanations or additional text:\n\n"${sourceText}"`;
       
-      const newTranslatedText = translations[targetLanguage as keyof typeof translations] || "Translation not available for this language";
+      // Call the Gemini API using our helper
+      const response = await generateGeminiResponse(translationPrompt);
+      
+      // Check if there's an error in the response
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Extract the translation from response
+      const newTranslatedText = response.text.trim();
       setTranslatedText(newTranslatedText);
-      setIsTranslating(false);
       
       // Add to history
       const newTranslation: Translation = {
@@ -186,11 +261,27 @@ const VoiceTranslator = () => {
         title: "Translation Complete",
         description: `Translated from ${getLanguageNameByCode(sourceLanguage)} to ${getLanguageNameByCode(targetLanguage)}`,
       });
-    }, 2000);
+      
+      // Auto-play if enabled
+      if (autoPlayTranslation && newTranslatedText) {
+        setTimeout(() => {
+          handlePlayTranslation(newTranslatedText);
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Translation error:", error);
+      toast({
+        title: "Translation Failed",
+        description: error instanceof Error ? error.message : "Failed to translate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
-  const handlePlayTranslation = () => {
-    if (!translatedText) {
+  const handlePlayTranslation = (text: string = translatedText) => {
+    if (!text) {
       toast({
         title: "No Translation",
         description: "Please translate some text first.",
@@ -199,22 +290,20 @@ const VoiceTranslator = () => {
       return;
     }
     
-    setIsPlaying(!isPlaying);
-    
-    if (!isPlaying) {
-      toast({
-        title: "Playing Audio",
-        description: `Playing translation in ${getLanguageNameByCode(targetLanguage)}`,
-      });
-      
-      // Simulate audio playing for 3 seconds
-      setTimeout(() => {
-        setIsPlaying(false);
-      }, 3000);
-    } else {
+    if (isPlaying) {
+      stop();
+      setIsPlaying(false);
       toast({
         title: "Audio Stopped",
         description: "Translation audio has been stopped.",
+      });
+    } else {
+      speak(text);
+      setIsPlaying(true);
+      
+      toast({
+        title: "Playing Audio",
+        description: `Playing translation in ${getLanguageNameByCode(targetLanguage)}`,
       });
     }
   };
@@ -229,11 +318,21 @@ const VoiceTranslator = () => {
       return;
     }
     
-    // In a real app, we would use navigator.clipboard.writeText(translatedText);
-    toast({
-      title: "Copied to Clipboard",
-      description: "Translation has been copied to clipboard.",
-    });
+    navigator.clipboard.writeText(translatedText)
+      .then(() => {
+        toast({
+          title: "Copied to Clipboard",
+          description: "Translation has been copied to clipboard.",
+        });
+      })
+      .catch(err => {
+        console.error("Clipboard copy failed:", err);
+        toast({
+          title: "Copy Failed",
+          description: "Failed to copy text to clipboard.",
+          variant: "destructive",
+        });
+      });
   };
 
   const handleSwapLanguages = () => {
@@ -281,6 +380,73 @@ const VoiceTranslator = () => {
       title: "Translation Loaded",
       description: "Historical translation has been loaded.",
     });
+  };
+
+  const handleFileUpload = () => {
+    setShowFileUploadDialog(true);
+  };
+
+  const processFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    
+    try {
+      // Simulate upload progress
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          const newProgress = prev + 10;
+          if (newProgress >= 100) {
+            clearInterval(interval);
+            return 100;
+          }
+          return newProgress;
+        });
+      }, 200);
+      
+      // Process the file based on type
+      if (uploadType === "audio") {
+        // For audio, we'd need to transcribe it first, then set as source text
+        // In a real app, this would use an API for speech-to-text
+        const simulatedTranscription = "This is simulated transcription from an audio file. In a real implementation, this would use a speech-to-text API.";
+        setTimeout(() => {
+          clearInterval(interval);
+          setUploadProgress(100);
+          setSourceText(simulatedTranscription);
+          setShowFileUploadDialog(false);
+          setIsUploading(false);
+          toast({
+            title: "Audio Processed",
+            description: "Audio file has been transcribed.",
+          });
+        }, 2000);
+      } else if (uploadType === "image") {
+        // For images, we'd use OCR to extract text
+        // In a real app, this would use an API for OCR
+        const simulatedOcrText = "This is simulated OCR text from an image. In a real implementation, this would use an OCR API to extract text from the image.";
+        setTimeout(() => {
+          clearInterval(interval);
+          setUploadProgress(100);
+          setSourceText(simulatedOcrText);
+          setShowFileUploadDialog(false);
+          setIsUploading(false);
+          toast({
+            title: "Image Processed",
+            description: "Text has been extracted from image.",
+          });
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("File processing error:", error);
+      setIsUploading(false);
+      setUploadProgress(0);
+      toast({
+        title: "Processing Failed",
+        description: "Failed to process the uploaded file.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -348,6 +514,17 @@ const VoiceTranslator = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex gap-2 mb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={handleFileUpload}
+                >
+                  <Upload className="h-4 w-4" /> Upload File
+                </Button>
+              </div>
+            
               <div className="relative">
                 <textarea
                   value={sourceText}
@@ -397,7 +574,7 @@ const VoiceTranslator = () => {
                       variant="outline"
                       size="icon"
                       className="rounded-full"
-                      onClick={handleCopyTranslation}
+                      onClick={() => handleCopyTranslation()}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -405,7 +582,7 @@ const VoiceTranslator = () => {
                       variant={isPlaying ? "default" : "outline"}
                       size="icon"
                       className={`rounded-full ${isPlaying ? 'bg-lifemate-purple text-white' : ''}`}
-                      onClick={handlePlayTranslation}
+                      onClick={() => handlePlayTranslation()}
                     >
                       <Volume2 className="h-4 w-4" />
                     </Button>
@@ -454,13 +631,17 @@ const VoiceTranslator = () => {
                     <h3 className="text-sm font-medium">Auto-Detect Language</h3>
                     <p className="text-xs text-muted-foreground">Automatically detect source language</p>
                   </div>
-                  <div className="h-6 w-12 rounded-full bg-lifemate-purple cursor-pointer flex items-center" onClick={() => {
-                    toast({
-                      title: "Auto-Detect",
-                      description: "Auto-detect language has been disabled",
-                    });
-                  }}>
-                    <div className="h-5 w-5 rounded-full bg-white ml-auto mr-0.5"></div>
+                  <div 
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center ${autoDetectLanguage ? 'bg-lifemate-purple' : 'bg-secondary'}`} 
+                    onClick={() => {
+                      setAutoDetectLanguage(!autoDetectLanguage);
+                      toast({
+                        title: "Auto-Detect",
+                        description: `Auto-detect language has been ${!autoDetectLanguage ? 'enabled' : 'disabled'}`,
+                      });
+                    }}
+                  >
+                    <div className={`h-5 w-5 rounded-full bg-white transition-all ${autoDetectLanguage ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
                   </div>
                 </div>
                 
@@ -469,13 +650,17 @@ const VoiceTranslator = () => {
                     <h3 className="text-sm font-medium">Auto-Play Translation</h3>
                     <p className="text-xs text-muted-foreground">Automatically play translation audio</p>
                   </div>
-                  <div className="h-6 w-12 rounded-full bg-secondary cursor-pointer flex items-center" onClick={() => {
-                    toast({
-                      title: "Auto-Play",
-                      description: "Auto-play translation has been enabled",
-                    });
-                  }}>
-                    <div className="h-5 w-5 rounded-full bg-white ml-0.5"></div>
+                  <div 
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center ${autoPlayTranslation ? 'bg-lifemate-purple' : 'bg-secondary'}`}
+                    onClick={() => {
+                      setAutoPlayTranslation(!autoPlayTranslation);
+                      toast({
+                        title: "Auto-Play",
+                        description: `Auto-play translation has been ${!autoPlayTranslation ? 'enabled' : 'disabled'}`,
+                      });
+                    }}
+                  >
+                    <div className={`h-5 w-5 rounded-full bg-white transition-all ${autoPlayTranslation ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
                   </div>
                 </div>
                 
@@ -484,13 +669,17 @@ const VoiceTranslator = () => {
                     <h3 className="text-sm font-medium">Offline Mode</h3>
                     <p className="text-xs text-muted-foreground">Use offline translation when available</p>
                   </div>
-                  <div className="h-6 w-12 rounded-full bg-secondary cursor-pointer flex items-center" onClick={() => {
-                    toast({
-                      title: "Offline Mode",
-                      description: "Offline mode has been enabled",
-                    });
-                  }}>
-                    <div className="h-5 w-5 rounded-full bg-white ml-0.5"></div>
+                  <div 
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center ${offlineMode ? 'bg-lifemate-purple' : 'bg-secondary'}`}
+                    onClick={() => {
+                      setOfflineMode(!offlineMode);
+                      toast({
+                        title: "Offline Mode",
+                        description: `Offline mode has been ${!offlineMode ? 'enabled' : 'disabled'}`,
+                      });
+                    }}
+                  >
+                    <div className={`h-5 w-5 rounded-full bg-white transition-all ${offlineMode ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
                   </div>
                 </div>
               </div>
@@ -500,7 +689,10 @@ const VoiceTranslator = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs">Speaking Rate</label>
-                    <Select defaultValue="normal">
+                    <Select 
+                      value={settings.speed}
+                      onValueChange={(value) => updateSettings({ speed: value as "slow" | "normal" | "fast" })}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select speed" />
                       </SelectTrigger>
@@ -514,7 +706,10 @@ const VoiceTranslator = () => {
                   
                   <div>
                     <label className="text-xs">Voice Gender</label>
-                    <Select defaultValue="female">
+                    <Select 
+                      value={settings.voiceType} 
+                      onValueChange={(value) => updateSettings({ voiceType: value as "female" | "male" })}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
@@ -642,7 +837,7 @@ const VoiceTranslator = () => {
                       variant="ghost" 
                       size="sm"
                       onClick={() => {
-                        // In a real app, we would use navigator.clipboard.writeText(translation.translatedText);
+                        navigator.clipboard.writeText(translation.translatedText);
                         toast({
                           title: "Copied to Clipboard",
                           description: "Translation has been copied to clipboard.",
@@ -699,7 +894,7 @@ const VoiceTranslator = () => {
             
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Japanese</span>
+                <span>Bengali</span>
                 <span>Novice</span>
               </div>
               <Progress value={15} className="h-2" />
@@ -755,6 +950,74 @@ const VoiceTranslator = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowLanguageDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* File Upload Dialog */}
+      <Dialog open={showFileUploadDialog} onOpenChange={setShowFileUploadDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload File for Translation</DialogTitle>
+            <DialogDescription>
+              Upload an audio file or image with text to translate
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">File Type</h3>
+              <RadioGroup 
+                value={uploadType} 
+                onValueChange={(value) => setUploadType(value as "audio" | "image")}
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="audio" id="audio" />
+                  <Label htmlFor="audio" className="flex items-center gap-2">
+                    <FileAudio className="h-4 w-4" /> Audio File
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="image" id="image" />
+                  <Label htmlFor="image" className="flex items-center gap-2">
+                    <Image className="h-4 w-4" /> Image with Text
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="file-upload">Select File</Label>
+              <input
+                id="file-upload"
+                type="file"
+                className="hidden"
+                accept={uploadType === "audio" ? "audio/*" : "image/*"}
+                onChange={processFileUpload}
+                ref={fileInputRef}
+                disabled={isUploading}
+              />
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isUploading ? "Uploading..." : "Choose File"}
+              </Button>
+              
+              {isUploading && (
+                <div className="w-full space-y-2">
+                  <Progress value={uploadProgress} className="w-full" />
+                  <p className="text-xs text-center text-muted-foreground">{uploadProgress}% complete</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFileUploadDialog(false)} disabled={isUploading}>
               Cancel
             </Button>
           </DialogFooter>

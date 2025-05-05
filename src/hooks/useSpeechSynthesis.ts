@@ -3,11 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { getVoiceSettings, saveVoiceSettings } from '@/services/emailService';
 import { useToast } from '@/hooks/use-toast';
 
-type VoiceStyle = 'detailed' | 'concise';
-type VoiceSpeed = 'slow' | 'normal' | 'fast';
-type VoiceType = 'male' | 'female';
+export type VoiceStyle = 'detailed' | 'concise';
+export type VoiceSpeed = 'slow' | 'normal' | 'fast';
+export type VoiceType = 'male' | 'female';
 
-interface VoiceSettings {
+export interface VoiceSettings {
   style: VoiceStyle;
   speed: VoiceSpeed;
   voiceType: VoiceType;
@@ -41,8 +41,13 @@ export const useSpeechSynthesis = () => {
     }
     
     // Load saved settings
-    const savedSettings = getVoiceSettings();
-    setSettings(savedSettings);
+    try {
+      const savedSettings = getVoiceSettings();
+      setSettings(savedSettings);
+    } catch (error) {
+      console.error('Error loading voice settings:', error);
+      // Use defaults if there's an error
+    }
     
     // Clean up speech synthesis on unmount
     return () => {
@@ -116,11 +121,12 @@ export const useSpeechSynthesis = () => {
       // Events for tracking speaking state
       utterance.onstart = () => setSpeaking(true);
       utterance.onend = () => setSpeaking(false);
-      utterance.onerror = () => {
+      utterance.onerror = (event) => {
         setSpeaking(false);
+        console.error("Speech synthesis error:", event.error);
         toast({
           title: 'Speech Error',
-          description: 'There was an error with the speech synthesis',
+          description: `There was an error with the speech synthesis: ${event.error}`,
           variant: 'destructive'
         });
       };
@@ -147,7 +153,11 @@ export const useSpeechSynthesis = () => {
   const updateSettings = useCallback((newSettings: Partial<VoiceSettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...newSettings };
-      saveVoiceSettings(updated);
+      try {
+        saveVoiceSettings(updated);
+      } catch (error) {
+        console.error('Error saving voice settings:', error);
+      }
       return updated;
     });
   }, []);

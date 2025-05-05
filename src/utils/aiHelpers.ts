@@ -16,6 +16,8 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
       };
     }
     
+    console.log("Sending request to Gemini API with prompt:", prompt.substring(0, 100) + "...");
+    
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
@@ -28,7 +30,7 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
           }]
         }],
         generationConfig: {
-          temperature: 0.7,
+          temperature: 0.2, // Lower temperature for more accurate translations
           maxOutputTokens: 1024,
         },
       })
@@ -49,6 +51,7 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
     }
 
     const data = await response.json();
+    console.log("Received response from Gemini API:", data);
     
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
       throw new Error('Invalid response format from Gemini API');
@@ -74,6 +77,34 @@ export const generateGeminiResponse = async (prompt: string): Promise<AIResponse
       error: errorMsg
     };
   }
+};
+
+// Specialized function for translations
+export const translateText = async (text: string, sourceLanguage: string, targetLanguage: string): Promise<AIResponse> => {
+  const translationPrompt = `Translate the following text from ${sourceLanguage} to ${targetLanguage}. Only provide the translation, no explanations:
+  
+  "${text}"`;
+  
+  return generateGeminiResponse(translationPrompt);
+};
+
+// Add support for image-to-text when available (using Gemini's multimodal capabilities)
+export const extractTextFromImage = async (imageBase64: string): Promise<AIResponse> => {
+  // Note: This is a placeholder - in a real app, you would use Gemini's multimodal API
+  // to extract text from images, or another OCR service
+  return {
+    text: "Image-to-text extraction is not yet implemented. This would use Gemini's vision capabilities in a production environment.",
+    error: "Not implemented"
+  };
+};
+
+// Function for audio transcription (placeholder)
+export const transcribeAudio = async (audioBase64: string): Promise<AIResponse> => {
+  // Note: This is a placeholder - in a real app, you would use a speech-to-text service
+  return {
+    text: "Audio transcription is not yet implemented. This would use a speech-to-text service in a production environment.",
+    error: "Not implemented"
+  };
 };
 
 // Make OpenAI function use Gemini for backward compatibility
