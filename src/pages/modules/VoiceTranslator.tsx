@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { generateGeminiResponse } from "@/utils/aiHelpers";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
@@ -60,7 +61,7 @@ const VoiceTranslator = () => {
   const [sourceText, setSourceText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [sourceLanguage, setSourceLanguage] = useState("en");
-  const [targetLanguage, setTargetLanguage] = useState("es");
+  const [targetLanguage, setTargetLanguage] = useState("bn");
   const [showLanguageDialog, setShowLanguageDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState<"source" | "target">("source");
   const [autoDetectLanguage, setAutoDetectLanguage] = useState(true);
@@ -81,27 +82,27 @@ const VoiceTranslator = () => {
     {
       id: "1",
       sourceText: "Hello, how are you doing today?",
-      translatedText: "Hola, ¿cómo estás hoy?",
+      translatedText: "হ্যালো, আজ আপনি কেমন আছেন?",
       sourceLanguage: "en",
-      targetLanguage: "es",
+      targetLanguage: "bn",
       timestamp: "Today, 10:30 AM",
       isFavorite: true
     },
     {
       id: "2",
       sourceText: "Where is the nearest restaurant?",
-      translatedText: "¿Dónde está el restaurante más cercano?",
+      translatedText: "নিকটতম রেস্টুরেন্ট কোথায়?",
       sourceLanguage: "en",
-      targetLanguage: "es",
+      targetLanguage: "bn",
       timestamp: "Yesterday, 3:15 PM",
       isFavorite: false
     },
     {
       id: "3",
       sourceText: "I need to find a pharmacy.",
-      translatedText: "Necesito encontrar una farmacia.",
+      translatedText: "আমার একটি ফার্মেসি খুঁজে পেতে হবে।",
       sourceLanguage: "en",
-      targetLanguage: "es",
+      targetLanguage: "bn",
       timestamp: "Yesterday, 11:45 AM",
       isFavorite: true
     }
@@ -133,36 +134,45 @@ const VoiceTranslator = () => {
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (SpeechRecognitionAPI) {
-        recognitionRef.current = new SpeechRecognitionAPI();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        
-        recognitionRef.current.onresult = (event) => {
-          const transcript = Array.from(event.results)
-            .map(result => result[0])
-            .map(result => result.transcript)
-            .join('');
-            
-          setSourceText(transcript);
-        };
-        
-        recognitionRef.current.onend = () => {
-          if (isListening) {
-            recognitionRef.current?.start();
-          } else {
+        try {
+          recognitionRef.current = new SpeechRecognitionAPI();
+          recognitionRef.current.continuous = true;
+          recognitionRef.current.interimResults = true;
+          
+          recognitionRef.current.onresult = (event) => {
+            const transcript = Array.from(event.results)
+              .map(result => result[0])
+              .map(result => result.transcript)
+              .join('');
+              
+            setSourceText(transcript);
+          };
+          
+          recognitionRef.current.onend = () => {
+            if (isListening) {
+              recognitionRef.current?.start();
+            } else {
+              setIsListening(false);
+            }
+          };
+          
+          recognitionRef.current.onerror = (event) => {
+            console.error('Speech recognition error', event.error);
             setIsListening(false);
-          }
-        };
-        
-        recognitionRef.current.onerror = (event) => {
-          console.error('Speech recognition error', event.error);
-          setIsListening(false);
+            toast({
+              title: "Speech Recognition Error",
+              description: `Error: ${event.error}. Please try again.`,
+              variant: "destructive",
+            });
+          };
+        } catch (error) {
+          console.error('Error initializing speech recognition:', error);
           toast({
             title: "Speech Recognition Error",
-            description: `Error: ${event.error}. Please try again.`,
+            description: "Failed to initialize speech recognition. Please try a different browser.",
             variant: "destructive",
           });
-        };
+        }
       } else {
         console.error('Speech Recognition API not supported in this browser');
         toast({
@@ -180,13 +190,22 @@ const VoiceTranslator = () => {
         recognitionRef.current.onerror = null;
         try {
           // Only call abort if recognition is active
-          recognitionRef.current.abort();
+          if (isListening) {
+            recognitionRef.current.abort();
+          }
         } catch (error) {
           console.error('Error cleaning up speech recognition:', error);
         }
       }
     };
   }, [toast, isListening]);
+
+  // Update speech recognition language when source language changes
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = sourceLanguage;
+    }
+  }, [sourceLanguage]);
 
   const getLanguageNameByCode = (code: string): string => {
     const language = languages.find(lang => lang.code === code);
@@ -216,13 +235,24 @@ const VoiceTranslator = () => {
         description: "Your speech has been recorded.",
       });
     } else {
+      setSourceText(""); // Clear previous text
       setIsListening(true);
       recognitionRef.current.lang = sourceLanguage;
-      recognitionRef.current.start();
-      toast({
-        title: "Listening",
-        description: "Speak now...",
-      });
+      try {
+        recognitionRef.current.start();
+        toast({
+          title: "Listening",
+          description: "Speak now...",
+        });
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+        setIsListening(false);
+        toast({
+          title: "Speech Recognition Error",
+          description: "Failed to start speech recognition. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -300,7 +330,7 @@ const VoiceTranslator = () => {
       return;
     }
     
-    if (isPlaying) {
+    if (speaking) {
       stop();
       setIsPlaying(false);
       toast({
@@ -401,15 +431,16 @@ const VoiceTranslator = () => {
     if (!file) return;
     
     setIsUploading(true);
+    setUploadProgress(0);
     
     try {
       // Simulate upload progress
       const interval = setInterval(() => {
         setUploadProgress(prev => {
           const newProgress = prev + 10;
-          if (newProgress >= 100) {
+          if (newProgress >= 95) {
             clearInterval(interval);
-            return 100;
+            return 95;
           }
           return newProgress;
         });
@@ -419,7 +450,8 @@ const VoiceTranslator = () => {
       if (uploadType === "audio") {
         // For audio, we'd need to transcribe it first, then set as source text
         // In a real app, this would use an API for speech-to-text
-        const simulatedTranscription = "This is simulated transcription from an audio file. In a real implementation, this would use a speech-to-text API.";
+        const simulatedTranscription = "This is a sample transcription from an audio file. In a production environment, this would use a speech-to-text API to extract the actual content from your audio.";
+        
         setTimeout(() => {
           clearInterval(interval);
           setUploadProgress(100);
@@ -434,7 +466,8 @@ const VoiceTranslator = () => {
       } else if (uploadType === "image") {
         // For images, we'd use OCR to extract text
         // In a real app, this would use an API for OCR
-        const simulatedOcrText = "This is simulated OCR text from an image. In a real implementation, this would use an OCR API to extract text from the image.";
+        const simulatedOcrText = "This is sample text extracted from an image. In a production environment, this would use an OCR service to extract the actual text content from your image.";
+        
         setTimeout(() => {
           clearInterval(interval);
           setUploadProgress(100);
@@ -536,16 +569,16 @@ const VoiceTranslator = () => {
               </div>
             
               <div className="relative">
-                <textarea
+                <Textarea
                   value={sourceText}
                   onChange={(e) => setSourceText(e.target.value)}
-                  className="w-full h-32 p-3 border rounded-md resize-none focus:outline-none focus:ring-1 focus:ring-lifemate-purple"
+                  className="w-full h-32 p-3 resize-none bg-white dark:bg-gray-800 text-black dark:text-white border-gray-300 dark:border-gray-600"
                   placeholder="Enter text or press the mic button to speak..."
-                ></textarea>
+                />
                 <Button
-                  variant="outline"
+                  variant={isListening ? "destructive" : "outline"}
                   size="icon"
-                  className={`absolute bottom-3 right-3 rounded-full ${isListening ? 'bg-red-500 text-white animate-pulse' : ''}`}
+                  className={`absolute bottom-3 right-3 rounded-full`}
                   onClick={handleListenClick}
                 >
                   <Mic className="h-4 w-4" />
@@ -571,12 +604,12 @@ const VoiceTranslator = () => {
               </Button>
               
               <div className="relative">
-                <textarea
+                <Textarea
                   value={translatedText}
                   readOnly
-                  className="w-full h-32 p-3 border rounded-md resize-none bg-secondary/50"
+                  className="w-full h-32 p-3 resize-none bg-gray-50 dark:bg-gray-700 text-black dark:text-white border-gray-300 dark:border-gray-600"
                   placeholder="Translation will appear here..."
-                ></textarea>
+                />
                 
                 {translatedText && (
                   <div className="absolute bottom-3 right-3 flex items-center gap-2">
@@ -589,9 +622,9 @@ const VoiceTranslator = () => {
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant={isPlaying ? "default" : "outline"}
+                      variant={speaking ? "default" : "outline"}
                       size="icon"
-                      className={`rounded-full ${isPlaying ? 'bg-lifemate-purple text-white' : ''}`}
+                      className={`rounded-full ${speaking ? 'bg-lifemate-purple text-white' : ''}`}
                       onClick={() => handlePlayTranslation()}
                     >
                       <Volume2 className="h-4 w-4" />
@@ -613,7 +646,7 @@ const VoiceTranslator = () => {
                   <Button 
                     key={index} 
                     variant="outline" 
-                    className="justify-start"
+                    className="justify-start text-left"
                     onClick={() => {
                       setSourceText(phrase);
                       toast({
@@ -642,7 +675,7 @@ const VoiceTranslator = () => {
                     <p className="text-xs text-muted-foreground">Automatically detect source language</p>
                   </div>
                   <div 
-                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center ${autoDetectLanguage ? 'bg-lifemate-purple' : 'bg-secondary'}`} 
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${autoDetectLanguage ? 'bg-lifemate-purple' : 'bg-secondary'}`} 
                     onClick={() => {
                       setAutoDetectLanguage(!autoDetectLanguage);
                       toast({
@@ -651,7 +684,7 @@ const VoiceTranslator = () => {
                       });
                     }}
                   >
-                    <div className={`h-5 w-5 rounded-full bg-white transition-all ${autoDetectLanguage ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
+                    <div className={`h-5 w-5 rounded-full bg-white shadow-md transition-all ${autoDetectLanguage ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
                   </div>
                 </div>
                 
@@ -661,7 +694,7 @@ const VoiceTranslator = () => {
                     <p className="text-xs text-muted-foreground">Automatically play translation audio</p>
                   </div>
                   <div 
-                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center ${autoPlayTranslation ? 'bg-lifemate-purple' : 'bg-secondary'}`}
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${autoPlayTranslation ? 'bg-lifemate-purple' : 'bg-secondary'}`}
                     onClick={() => {
                       setAutoPlayTranslation(!autoPlayTranslation);
                       toast({
@@ -670,7 +703,7 @@ const VoiceTranslator = () => {
                       });
                     }}
                   >
-                    <div className={`h-5 w-5 rounded-full bg-white transition-all ${autoPlayTranslation ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
+                    <div className={`h-5 w-5 rounded-full bg-white shadow-md transition-all ${autoPlayTranslation ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
                   </div>
                 </div>
                 
@@ -680,7 +713,7 @@ const VoiceTranslator = () => {
                     <p className="text-xs text-muted-foreground">Use offline translation when available</p>
                   </div>
                   <div 
-                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center ${offlineMode ? 'bg-lifemate-purple' : 'bg-secondary'}`}
+                    className={`h-6 w-12 rounded-full cursor-pointer flex items-center transition-colors ${offlineMode ? 'bg-lifemate-purple' : 'bg-secondary'}`}
                     onClick={() => {
                       setOfflineMode(!offlineMode);
                       toast({
@@ -689,7 +722,7 @@ const VoiceTranslator = () => {
                       });
                     }}
                   >
-                    <div className={`h-5 w-5 rounded-full bg-white transition-all ${offlineMode ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
+                    <div className={`h-5 w-5 rounded-full bg-white shadow-md transition-all ${offlineMode ? 'ml-auto mr-0.5' : 'ml-0.5'}`}></div>
                   </div>
                 </div>
               </div>
@@ -706,7 +739,7 @@ const VoiceTranslator = () => {
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select speed" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white dark:bg-gray-800 text-black dark:text-white">
                         <SelectItem value="slow">Slow</SelectItem>
                         <SelectItem value="normal">Normal</SelectItem>
                         <SelectItem value="fast">Fast</SelectItem>
@@ -723,7 +756,7 @@ const VoiceTranslator = () => {
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white dark:bg-gray-800 text-black dark:text-white">
                         <SelectItem value="female">Female</SelectItem>
                         <SelectItem value="male">Male</SelectItem>
                       </SelectContent>
@@ -758,7 +791,7 @@ const VoiceTranslator = () => {
                       </div>
                       <div className="text-sm">
                         <span className="font-medium">{getLanguageNameByCode(translation.targetLanguage)}:</span>
-                        <p className="mt-1">{translation.translatedText}</p>
+                        <p className="mt-1 text-black dark:text-white">{translation.translatedText}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -838,7 +871,7 @@ const VoiceTranslator = () => {
                       </div>
                       <div className="text-sm">
                         <span className="font-medium">{getLanguageNameByCode(translation.targetLanguage)}:</span>
-                        <p className="mt-1">{translation.translatedText}</p>
+                        <p className="mt-1 text-black dark:text-white">{translation.translatedText}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -888,7 +921,7 @@ const VoiceTranslator = () => {
           <div className="grid gap-4">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Spanish</span>
+                <span>Bengali</span>
                 <span>Intermediate</span>
               </div>
               <Progress value={65} className="h-2" />
@@ -896,7 +929,7 @@ const VoiceTranslator = () => {
             
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>French</span>
+                <span>Spanish</span>
                 <span>Beginner</span>
               </div>
               <Progress value={30} className="h-2" />
@@ -904,7 +937,7 @@ const VoiceTranslator = () => {
             
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Bengali</span>
+                <span>French</span>
                 <span>Novice</span>
               </div>
               <Progress value={15} className="h-2" />
