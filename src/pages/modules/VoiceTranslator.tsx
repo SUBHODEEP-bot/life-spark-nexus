@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Mic, Volume2, Languages, ArrowRight, History, Bookmark, RefreshCw, Copy, Star, Upload, FileAudio, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -900,3 +901,144 @@ const VoiceTranslator = () => {
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       </Button>
                     </div>
+                  </CardHeader>
+                  <CardContent className="py-2">
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        <span className="font-medium">{getLanguageNameByCode(translation.sourceLanguage)}:</span>
+                        <p className="mt-1 text-muted-foreground">{translation.sourceText}</p>
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">{getLanguageNameByCode(translation.targetLanguage)}:</span>
+                        <p className="mt-1 text-black dark:text-white">{translation.translatedText}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="pt-2 border-t flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => loadFromHistory(translation)}
+                    >
+                      Use Again
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <div className="inline-block p-4 bg-secondary rounded-full mb-4">
+                  <Bookmark className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-medium">No Saved Translations</h3>
+                <p className="text-muted-foreground">Saved translations will appear here</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Language selection dialog */}
+      <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Select {dialogMode === "source" ? "Source" : "Target"} Language</DialogTitle>
+            <DialogDescription>
+              Choose the language you want to {dialogMode === "source" ? "translate from" : "translate to"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 py-4">
+            {languages.map((language) => (
+              <Button
+                key={language.code}
+                variant="outline"
+                className="justify-start text-left h-auto py-3"
+                onClick={() => handleSelectLanguage(language.code)}
+              >
+                <span className="text-lg mr-2">{language.flag}</span>
+                {language.name}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* File upload dialog */}
+      <Dialog open={showFileUploadDialog} onOpenChange={setShowFileUploadDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload File for Translation</DialogTitle>
+            <DialogDescription>
+              Upload an audio file or image with text to translate
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <RadioGroup
+              value={uploadType}
+              onValueChange={(value) => setUploadType(value as "audio" | "image")}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="audio" id="audio" />
+                <Label htmlFor="audio" className="flex items-center gap-2 cursor-pointer">
+                  <FileAudio className="h-5 w-5" /> Audio File
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="image" id="image" />
+                <Label htmlFor="image" className="flex items-center gap-2 cursor-pointer">
+                  <Image className="h-5 w-5" /> Image with Text
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            {isUploading ? (
+              <div className="space-y-2">
+                <Progress value={uploadProgress} className="w-full h-2" />
+                <p className="text-center text-sm text-muted-foreground">
+                  {uploadProgress < 100 ? "Processing..." : "Complete!"}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept={uploadType === "audio" ? "audio/*" : "image/*"}
+                  onChange={processFileUpload}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mb-2"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Select {uploadType === "audio" ? "Audio" : "Image"} File
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  {uploadType === "audio"
+                    ? "Supported formats: MP3, WAV, M4A"
+                    : "Supported formats: JPG, PNG, PDF"}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowFileUploadDialog(false)}
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default VoiceTranslator;
