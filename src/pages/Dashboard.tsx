@@ -6,7 +6,7 @@ import {
   ActivitySquare, BarChart3, Bell, Calendar, CheckSquare, 
   Heart, HelpCircle, Home, MessageCircle, Newspaper, 
   Shield, Star, User, UserCog, Mic, AlertTriangle, 
-  LucideIcon, Award, Wallet, Languages, Mail, Clock, Search 
+  LucideIcon, Award, Wallet, Languages, Mail, Clock, Search, BookOpen
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -194,6 +194,15 @@ const modulesList: Module[] = [
     path: "/privacy-guardian",
     color: "text-teal-400",
     bgGradient: "from-teal-500/10 to-transparent"
+  },
+  {
+    id: "ai-study-master",
+    title: "AI Study Master",
+    description: "Intelligent learning assistant with quizzes and study tools",
+    icon: BookOpen,
+    path: "/ai-study-master",
+    color: "text-blue-600",
+    bgGradient: "from-blue-600/10 to-transparent"
   }
 ];
 

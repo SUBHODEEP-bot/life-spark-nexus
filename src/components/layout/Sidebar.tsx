@@ -4,7 +4,7 @@ import {
   ActivitySquare, BarChart3, Bell, Calendar, CheckSquare, 
   Heart, HelpCircle, Home, ListChecks, MessageCircle, 
   Newspaper, Shield, Star, User, UserCog, Mic, AlertTriangle,
-  LucideIcon, X, Award, Wallet, Languages
+  LucideIcon, X, Award, Wallet, Languages, BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -140,6 +140,12 @@ const moduleNavItems: NavItem[] = [
     icon: Shield,
     path: "/privacy-guardian",
     color: "text-teal-400",
+  },
+  {
+    title: "AI Study Master",
+    icon: BookOpen,
+    path: "/ai-study-master",
+    color: "text-blue-600",
   },
 ];
 
