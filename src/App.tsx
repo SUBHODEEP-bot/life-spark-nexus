@@ -33,6 +33,7 @@ import EmergencyAlert from "./pages/modules/EmergencyAlert";
 import CelebrationTracker from "./pages/modules/CelebrationTracker";
 import VoiceTranslator from "./pages/modules/VoiceTranslator";
 import PrivacyGuardian from "./pages/modules/PrivacyGuardian";
+import AIStudyMaster from "./pages/modules/AIStudyMaster";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ const App = () => {
                 <Route path="/celebration-tracker" element={<CelebrationTracker />} />
                 <Route path="/voice-translator" element={<VoiceTranslator />} />
                 <Route path="/privacy-guardian" element={<PrivacyGuardian />} />
+                <Route path="/ai-study-master" element={<AIStudyMaster />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
