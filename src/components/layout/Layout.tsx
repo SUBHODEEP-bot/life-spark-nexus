@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { initializeSampleNotifications, startPeriodicNotifications } from "@/utils/notificationInitializer";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { Loader, HelpCircle, X, Bot } from "lucide-react";
@@ -31,6 +31,7 @@ const Layout = () => {
   const [chatHistory, setChatHistory] = useState<{role: string, message: string}[]>([
     { role: "assistant", message: "Hello! I'm your AI Assistant. How can I help you today?" }
   ]);
+  const [notificationsInitialized, setNotificationsInitialized] = useState(false);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -43,6 +44,19 @@ const Layout = () => {
       navigate("/auth", { state: { from: location.pathname } });
     }
   }, [isAuthenticated, isLoading, navigate, location.pathname, mounted]);
+
+  // Initialize notifications system when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && !notificationsInitialized) {
+      // Initialize sample notifications for demo
+      setTimeout(() => {
+        initializeSampleNotifications();
+        startPeriodicNotifications();
+      }, 2000); // Delay to allow UI to load
+      
+      setNotificationsInitialized(true);
+    }
+  }, [isAuthenticated, notificationsInitialized]);
 
   // Page transition effect
   useEffect(() => {
@@ -72,6 +86,10 @@ const Layout = () => {
       {
         keywords: ["hello", "hi", "hey", "greetings"],
         response: "Hello there! How can I assist you with LifeMate X today?"
+      },
+      {
+        keywords: ["notification", "alert", "remind"],
+        response: "The notification system keeps you updated on all your LifeMate X activities. You can customize notification settings in your profile. Is there a specific type of notification you'd like to learn about?"
       },
       {
         keywords: ["help", "confused", "understand", "how to"],

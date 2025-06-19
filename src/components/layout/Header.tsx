@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Bell, Menu, Moon, Search, Settings, Sun, User, HelpCircle, Languages, Shield, Laptop } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
+import NotificationPanel from "@/components/notifications/NotificationPanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,7 @@ interface HeaderProps {
 
 const Header = ({ toggleSidebar }: HeaderProps) => {
   const { user, logout, theme, setTheme, toggleTheme } = useAuth();
+  const { unreadCount } = useNotifications();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -45,32 +47,7 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Weekly Report",
-      message: "Your weekly activity report is ready to view",
-      time: "10 minutes ago",
-      read: false,
-    },
-    {
-      id: 2,
-      title: "Appointment Reminder",
-      message: "You have a doctor's appointment tomorrow at 2:00 PM",
-      time: "1 hour ago",
-      read: false,
-    },
-    {
-      id: 3,
-      title: "Task Completed",
-      message: "Your scheduled backup task has completed successfully",
-      time: "3 hours ago",
-      read: true,
-    }
-  ]);
 
-  // Prevent hydration mismatch by only showing theme elements after mount
   useEffect(() => {
     setMounted(true);
     
@@ -84,25 +61,6 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
 
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications);
-  };
-
-  const markAsRead = (id: number) => {
-    setNotifications(
-      notifications.map(notification => 
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(
-      notifications.map(notification => ({ ...notification, read: true }))
-    );
-    toast({
-      title: "Notifications",
-      description: "All notifications marked as read",
-      duration: 3000,
-    });
   };
 
   const handleProfileClick = () => {
@@ -121,7 +79,6 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
     setShowHelpDialog(true);
   };
 
-  // Theme toggle handlers
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
     setShowThemeMenu(false);
@@ -142,48 +99,6 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
       default: return <Sun className="h-5 w-5" />;
     }
   };
-
-  // Notification popover content
-  const notificationContent = (
-    <PopoverContent className="w-80 p-0 max-h-96 overflow-auto dropdown-content">
-      <div className="p-4 border-b flex justify-between items-center">
-        <h3 className="font-semibold">Notifications</h3>
-        <Button variant="ghost" size="sm" onClick={markAllAsRead}>Mark all read</Button>
-      </div>
-      <div className="py-2">
-        {notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <div 
-              key={notification.id} 
-              className={`p-3 hover:bg-secondary/80 cursor-pointer flex ${!notification.read ? 'border-l-2 border-lifemate-purple' : ''}`}
-              onClick={() => markAsRead(notification.id)}
-            >
-              <div className="mr-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${notification.read ? 'bg-secondary' : 'bg-lifemate-purple/10'}`}>
-                  <Bell className={`h-4 w-4 ${notification.read ? 'text-muted-foreground' : 'text-lifemate-purple'}`} />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className={`text-sm ${!notification.read ? 'font-medium' : ''}`}>{notification.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
-                <p className="text-xs text-muted-foreground mt-2">{notification.time}</p>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="p-4 text-center text-muted-foreground">
-            <p>No notifications</p>
-          </div>
-        )}
-      </div>
-      <div className="p-2 border-t text-center">
-        <Button variant="link" size="sm" className="w-full">View all notifications</Button>
-      </div>
-    </PopoverContent>
-  );
-
-  // Count unread notifications
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <header 
@@ -271,12 +186,14 @@ const Header = ({ toggleSidebar }: HeaderProps) => {
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-semibold">
-                    {unreadCount}
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </Button>
             </PopoverTrigger>
-            {notificationContent}
+            <PopoverContent className="p-0 w-auto" side="bottom" align="end">
+              <NotificationPanel onClose={() => setShowNotifications(false)} />
+            </PopoverContent>
           </Popover>
           
           <DropdownMenu>
