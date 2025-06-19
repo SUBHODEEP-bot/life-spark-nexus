@@ -1,73 +1,48 @@
-# Welcome to your Lovable project
+# Welcome to Your Project
 
-## Project info
+## Project Info
 
-**URL**: https://lovable.dev/projects/7d2633c7-ad33-4021-b08e-087b6ecf74be
+**Live URL**: https://life-spark-nexus.netlify.app/app-integration
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 💻 How Can I Edit This Code?
 
-**Use Lovable**
+There are several ways to edit and run this project locally.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7d2633c7-ad33-4021-b08e-087b6ecf74be) and start prompting.
+### 🛠️ Option 1: Use Your Preferred IDE
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+If you're using VS Code or any modern code editor:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Step 1: Clone the repository using your Git URL.
 git clone <YOUR_GIT_URL>
 
 # Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Install dependencies.
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start the development server.
 npm run dev
-```
 
-**Edit a file directly in GitHub**
+⚠️ Make sure Node.js & npm are installed. You can install them via nvm.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
+🧰 Tech Stack Used
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+⚛️ React
 
-## How can I deploy this project?
+⚡ Vite
 
-Simply open [Lovable](https://lovable.dev/projects/7d2633c7-ad33-4021-b08e-087b6ecf74be) and click on Share -> Publish.
+🧠 TypeScript
 
-## Can I connect a custom domain to my Lovable project?
+🎨 Tailwind CSS
 
-Yes, you can!
+🧩 shadcn-ui
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+💬 Chatbot Support
+This website includes a built-in AI-powered chatbot 🧠 to assist users with any queries, suggestions, or navigation help.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Just open the chatbot from the bottom corner and start typing — it’s here to guide you!
