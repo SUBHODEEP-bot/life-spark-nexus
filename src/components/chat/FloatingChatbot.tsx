@@ -62,26 +62,30 @@ Please provide a helpful, informative response about LifeMate X features, functi
 
   return (
     <>
-      {/* Floating Chatbot Icon */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Floating Chatbot Icon - Fixed positioning with high z-index */}
+      <div className="fixed bottom-6 right-6 z-[9999] pointer-events-none">
         <button
           onClick={() => setShowAssistantDialog(true)}
-          className="group relative transition-all duration-300 hover:scale-110 hover:rotate-3 focus:outline-none focus:ring-2 focus:ring-lifemate-purple focus:ring-offset-2 rounded-full"
+          className="group relative transition-all duration-300 hover:scale-110 hover:rotate-3 focus:outline-none focus:ring-2 focus:ring-lifemate-purple focus:ring-offset-2 rounded-full pointer-events-auto shadow-lg hover:shadow-xl"
           aria-label="Open AI Assistant"
+          style={{ 
+            transform: 'translateZ(0)', // Force hardware acceleration
+            backfaceVisibility: 'hidden' // Improve performance
+          }}
         >
-          <div className="animate-pulse-slow">
+          <div className="relative">
             <RobotIcon size={80} />
+            
+            {/* Pulsing indicator */}
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping opacity-75"></div>
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full"></div>
           </div>
-          
-          {/* Floating animation dots */}
-          <div className="absolute -top-2 -right-2 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
-          <div className="absolute -top-2 -right-2 w-3 h-3 bg-green-400 rounded-full"></div>
         </button>
       </div>
 
       {/* AI Assistant Dialog */}
       <Dialog open={showAssistantDialog} onOpenChange={setShowAssistantDialog}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-hidden flex flex-col dropdown-content">
+        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-hidden flex flex-col z-[10000]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-lifemate-purple" />
