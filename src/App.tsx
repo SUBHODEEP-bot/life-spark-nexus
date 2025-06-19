@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -34,6 +33,7 @@ import CelebrationTracker from "./pages/modules/CelebrationTracker";
 import VoiceTranslator from "./pages/modules/VoiceTranslator";
 import PrivacyGuardian from "./pages/modules/PrivacyGuardian";
 import AIStudyMaster from "./pages/modules/AIStudyMaster";
+import FloatingChatbot from "./components/chat/FloatingChatbot";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +79,9 @@ const App = () => {
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            
+            {/* Floating Chatbot - Available on all pages */}
+            <FloatingChatbot />
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
