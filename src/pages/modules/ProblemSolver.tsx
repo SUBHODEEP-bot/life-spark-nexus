@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
+import { generateGeminiResponse } from "@/utils/geminiHelpers";
 import { 
   HelpCircle, 
   MessageSquare, 
@@ -98,7 +98,7 @@ const ProblemSolver = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
-  const handleSubmitQuestion = () => {
+  const handleSubmitQuestion = async () => {
     if (!question.trim()) {
       toast({
         title: "Question required",
@@ -110,10 +110,36 @@ const ProblemSolver = () => {
 
     setIsGeneratingAnswer(true);
     
-    // Simulate AI generating an answer
-    setTimeout(() => {
-      let answer = "";
+    try {
+      const prompt = `You are a helpful AI assistant that provides practical solutions to daily life problems. 
       
+      The user is asking about: "${question}"
+      Category: ${selectedCategory}
+      
+      Please provide a clear, actionable solution in 2-3 paragraphs. Focus on practical steps the person can take to solve their problem. Be empathetic and understanding while offering concrete advice.`;
+
+      const response = await generateGeminiResponse(prompt);
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setGeneratedAnswer(response.text);
+      
+      toast({
+        title: "Solution generated",
+        description: "AI has generated a solution to your problem"
+      });
+    } catch (error) {
+      console.error('Error generating solution:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate solution. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Fallback to mock response
+      let answer = "";
       if (question.toLowerCase().includes("career")) {
         answer = "To advance in your career, focus on continuous learning, building a professional network, and setting clear goals. Seek mentorship and regularly reassess your skills against market demands. Take initiative on high-visibility projects and communicate your achievements effectively.";
       } else if (question.toLowerCase().includes("relationship")) {
@@ -123,15 +149,10 @@ const ProblemSolver = () => {
       } else {
         answer = "Based on your question, I recommend taking a structured approach. Start by clearly defining the problem and gathering relevant information. Consider multiple perspectives and potential solutions. Evaluate each option against your priorities and constraints before making a decision.";
       }
-      
       setGeneratedAnswer(answer);
+    } finally {
       setIsGeneratingAnswer(false);
-      
-      toast({
-        title: "Solution generated",
-        description: "AI has generated a solution to your problem"
-      });
-    }, 2000);
+    }
   };
 
   const handleSaveAnswer = () => {
@@ -396,7 +417,7 @@ const ProblemSolver = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p>{generatedAnswer}</p>
+                <p className="whitespace-pre-wrap">{generatedAnswer}</p>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Button 

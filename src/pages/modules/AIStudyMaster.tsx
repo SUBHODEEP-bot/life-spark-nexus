@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ import {
 } from "recharts";
 
 import { supabase } from "@/integrations/supabase/client";
-import { generateGeminiResponse } from "@/utils/aiHelpers";
+import { generateGeminiResponse } from "@/utils/geminiHelpers";
 
 interface StudyTask {
   id: string;
@@ -239,33 +238,41 @@ const AIStudyMaster = () => {
     setSearchResults({ content: "", videos: [] });
 
     try {
-      // Try to get content from AI API
-      const prompt = `Provide a concise educational explanation (around 250 words) of: ${searchQuery}. Focus on key points that would be helpful for a student.`;
+      const prompt = `Provide a comprehensive educational explanation (around 300-400 words) about: ${searchQuery}. 
+      
+      Structure your response to include:
+      1. A clear definition or introduction
+      2. Key concepts and principles
+      3. Real-world applications or examples
+      4. Why this topic is important to understand
+      
+      Make it educational and engaging for students.`;
+      
       const response = await generateGeminiResponse(prompt);
       
       if (response.error) {
         throw new Error(response.error);
       }
 
-      // For demo purposes, we'll simulate video results since we can't call YouTube API
+      // Simulate video results since we can't call YouTube API directly
       const mockVideos = [
         {
           id: `${searchQuery.replace(/\s/g, '')}-1`,
-          title: `Learn about ${searchQuery} - Part 1`,
+          title: `Learn ${searchQuery} - Complete Guide`,
           thumbnail: "https://i.imgur.com/ZLlGYIJ.png",
-          channelTitle: "Educational Channel"
+          channelTitle: "Educational Hub"
         },
         {
           id: `${searchQuery.replace(/\s/g, '')}-2`,
-          title: `${searchQuery} for Beginners`,
+          title: `${searchQuery} Explained Simply`,
           thumbnail: "https://i.imgur.com/McZgHsA.png",
-          channelTitle: "Learning Platform"
+          channelTitle: "Learning Made Easy"
         },
         {
           id: `${searchQuery.replace(/\s/g, '')}-3`,
-          title: `${searchQuery} Advanced Concepts`,
+          title: `${searchQuery} - Advanced Concepts`,
           thumbnail: "https://i.imgur.com/5tJTysE.png",
-          channelTitle: "Study Helper"
+          channelTitle: "Study Pro"
         }
       ];
 
@@ -274,24 +281,17 @@ const AIStudyMaster = () => {
         videos: mockVideos
       });
 
-      // Save search to user history if logged in
       if (user) {
         await saveSearchToHistory(searchQuery);
       }
     } catch (error) {
       console.error('Error during search:', error);
-      toast.error('Error fetching results. Using sample content instead.');
+      toast.error('Error fetching results. Please try again.');
       
-      // Fallback to mock data
-      const filteredContent = MOCK_SEARCH_CONTENT.content.replace("topic", searchQuery);
-      const videos = MOCK_SEARCH_CONTENT.videos.map(v => ({
-        ...v,
-        title: v.title.includes("Topic") ? v.title.replace("Topic", searchQuery) : v.title
-      }));
-      
+      // Fallback to basic response
       setSearchResults({
-        content: filteredContent,
-        videos: videos
+        content: `${searchQuery} is an important topic in education. Understanding the fundamentals and applying them through practice is key to mastering this subject. Consider exploring various resources and engaging with the material through different learning methods.`,
+        videos: []
       });
     } finally {
       setSearchLoading(false);
@@ -316,18 +316,20 @@ const AIStudyMaster = () => {
     
     setQuizLoading(true);
     try {
-      // Try to generate quiz from AI
-      const prompt = `Generate a quiz with 5 multiple choice questions about general educational topics. 
-      For each question, provide 4 options and indicate the correct answer. 
-      Format your response as a valid JSON array with this exact structure:
+      const prompt = `Create a quiz with exactly 5 multiple choice questions about general educational topics including science, history, literature, mathematics, and current events.
+
+      For each question, provide exactly 4 options and indicate which one is correct.
+      
+      Return ONLY a valid JSON array in this exact format:
       [
         {
-          "question": "Question text here",
-          "options": ["Option A", "Option B", "Option C", "Option D"],
-          "correctAnswer": "Option that is correct"
+          "question": "What is the capital of France?",
+          "options": ["London", "Berlin", "Paris", "Madrid"],
+          "correctAnswer": "Paris"
         }
       ]
-      Don't include any explanations or additional text, just the JSON array.`;
+      
+      Make sure the questions are educational, diverse, and appropriate for general knowledge. Do not include any explanation or additional text.`;
 
       const response = await generateGeminiResponse(prompt);
       
@@ -336,8 +338,22 @@ const AIStudyMaster = () => {
       }
 
       try {
-        // Try to parse the response as JSON
-        let text = response.text.replace(/```json|```/g, '').trim();
+        let text = response.text.trim();
+        
+        // Clean up the response to extract JSON
+        if (text.includes('```json')) {
+          text = text.split('```json')[1].split('```')[0].trim();
+        } else if (text.includes('```')) {
+          text = text.split('```')[1].split('```')[0].trim();
+        }
+        
+        // Remove any leading/trailing text that isn't JSON
+        const jsonStart = text.indexOf('[');
+        const jsonEnd = text.lastIndexOf(']');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          text = text.substring(jsonStart, jsonEnd + 1);
+        }
+        
         const questions = JSON.parse(text);
         
         const formattedQuestions = questions.map((q: any, index: number) => ({
@@ -354,7 +370,7 @@ const AIStudyMaster = () => {
       }
     } catch (error) {
       console.error('Error generating quiz:', error);
-      toast.error('Using pre-defined quiz questions instead.');
+      toast.error('Using sample quiz questions.');
       
       // Fallback to mock quiz questions
       setQuizQuestions(MOCK_QUIZ_QUESTIONS);
@@ -412,13 +428,18 @@ const AIStudyMaster = () => {
   const generateTasks = async () => {
     setTasksLoading(true);
     try {
-      const prompt = `Based on general educational needs, generate 5 study tasks that would be helpful for a student. Format as a JSON array with this structure:
+      const prompt = `Generate 5 practical study tasks that would help any student improve their learning. 
+      
+      Focus on different aspects of studying like reading, practice, review, and active learning techniques.
+      
+      Return ONLY a valid JSON array in this exact format:
       [
         {
-          "title": "Task description"
+          "title": "Read one chapter from your textbook and summarize key points"
         }
       ]
-      Keep tasks concise and actionable. Don't include any explanations or additional text, just the JSON array.`;
+      
+      Make each task specific, actionable, and educationally valuable. Do not include explanations.`;
 
       const response = await generateGeminiResponse(prompt);
       
@@ -427,8 +448,22 @@ const AIStudyMaster = () => {
       }
 
       try {
-        // Try to parse the response as JSON
-        let text = response.text.replace(/```json|```/g, '').trim();
+        let text = response.text.trim();
+        
+        // Clean up the response to extract JSON
+        if (text.includes('```json')) {
+          text = text.split('```json')[1].split('```')[0].trim();
+        } else if (text.includes('```')) {
+          text = text.split('```')[1].split('```')[0].trim();
+        }
+        
+        // Remove any leading/trailing text that isn't JSON
+        const jsonStart = text.indexOf('[');
+        const jsonEnd = text.lastIndexOf(']');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          text = text.substring(jsonStart, jsonEnd + 1);
+        }
+        
         const newTasks = JSON.parse(text);
         
         const generatedTasks = newTasks.map((task: any, index: number) => ({
@@ -439,15 +474,11 @@ const AIStudyMaster = () => {
         }));
         
         if (user) {
-          // Save tasks to database if logged in
           for (const task of generatedTasks) {
             await saveTasks(task.title);
           }
-          
-          // Reload tasks to show the newly created ones
           loadUserData(user.id);
         } else {
-          // For demo without login
           setTasks(prev => [...generatedTasks, ...prev]);
         }
         
@@ -458,7 +489,7 @@ const AIStudyMaster = () => {
       }
     } catch (error) {
       console.error('Error generating tasks:', error);
-      toast.error('Could not generate tasks. Using sample tasks instead.');
+      toast.error('Using sample tasks.');
       
       // Fallback to mock tasks
       const newMockTasks = MOCK_TASKS.map(task => ({
@@ -582,7 +613,11 @@ const AIStudyMaster = () => {
   const processVoiceQuery = async (query: string) => {
     setVoiceLoading(true);
     try {
-      const response = await generateGeminiResponse(`You are an educational assistant. Provide a brief (100-150 words) explanation of this topic or answer this question: ${query}`);
+      const prompt = `You are an educational assistant. A student is asking: "${query}"
+      
+      Provide a helpful, educational response in 100-150 words. Be encouraging and informative. Focus on giving practical study advice or explaining concepts clearly.`;
+      
+      const response = await generateGeminiResponse(prompt);
       
       if (response.error) {
         throw new Error(response.error);
@@ -596,10 +631,10 @@ const AIStudyMaster = () => {
       }
     } catch (error) {
       console.error('Error processing voice query:', error);
-      toast.error('Error processing your question. Using a default response.');
+      toast.error('Error processing your question.');
       
       // Fallback response
-      const fallbackResponse = `I'm sorry, I couldn't process your question about "${query}" right now. Here's some general advice: When studying this topic, start with the fundamentals and gradually build up to more complex concepts. Try using a variety of resources like textbooks, videos, and practice problems to reinforce your understanding.`;
+      const fallbackResponse = `I understand you're asking about "${query}". Here's some general study advice: Break down complex topics into smaller, manageable parts. Use active learning techniques like summarizing, questioning, and teaching others. Regular practice and review help reinforce your understanding. Don't hesitate to seek help when needed.`;
       setVoiceResponse(fallbackResponse);
       
       if ('speechSynthesis' in window) {
