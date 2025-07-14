@@ -2,7 +2,7 @@
 
 ## Project Info
 
-**Live URL**: https://life-spark-nexus.netlify.app/app-integration
+**Live URL**:https://life-spark-nexus.netlify.app/
 
 ---
 
